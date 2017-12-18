@@ -1,0 +1,94 @@
+div {
+	border-style: solid;
+	border-width: 1px;
+	border-color: #d3d3d3;
+}
+
+.rangeBox {
+	text-align: center;
+}
+
+#drawingCanvas {
+	float: left;
+}
+
+#pencilUsageDesc {
+	border-style: solid;
+	border-width: 1px;
+	border-color: #d3d3d3;
+	width: 600px;
+	clear: right;
+}
+
+#saveLoadDesc {
+	border-style: none;
+	border-width: 1px;
+	border-color: #d3d3d3;
+	width: 600px;
+	clear: right;
+}
+
+#selectionStatusDiv {
+	float: left;
+	width: 300px;
+	height: 600px;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #d3d3d3;
+	vertical-align: top;
+	display: block;
+}
+
+#simStatusDiv {
+	font-size: 2em;
+}
+
+#stepLeftButton {
+	width: 20px;
+	vertical-align: top;
+}
+
+#stepLabel {
+}
+
+#stepRange {
+	width: 500px;
+	margin: 0px;
+	padding: 0px;
+}
+
+#stepRightButton {
+	width: 20px;
+	text-align: center;
+	margin: 0px;
+	padding: 0px;
+	vertical-align: top;
+}
+
+#timeMachine {
+	width: 600px;
+	height: 300px;
+	float: left;
+}
+
+#turnRange {
+	width: 500px;
+	margin: 0px;
+	padding: 0px;
+}
+
+#turnLeftButton {
+	width: 20px;
+	vertical-align: top;
+}
+
+#turnRightButton {
+	width: 20px;
+	text-align: center;
+	margin: 0px;
+	padding: 0px;
+	vertical-align: top;
+}
+
+#turnLabel {
+}

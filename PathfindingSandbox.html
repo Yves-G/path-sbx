@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<link href="style.css" rel="stylesheet" type="text/css">
+<style>
+</style>
+	<script src="CoordinateSpace.js"></script>
+	<script src="DrawingArea.js"></script>
+	<script src="Grid.js"></script> 
+	<script src="Pencil.js"></script>
+	<script src="PriorityQueue.js"></script>
+	<script src="Simulation.js"></script>
+	<script src="Unit.js"></script>
+	<script src="UnitCreator.js"></script>
+	<script src="UnitManager.js"></script>
+	<script src="UnitMotion.js"></script>
+	<script src="Utility.js"></script>
+	<script src="Vector.js"></Script>
+	<script src="Visualization.js"></script>
+</head>
+<body>
+	Pencil: 
+	<select id="pencilSelect" onChange="pencilSelect_onChange()">
+		<option value="gridObstruction">Grid obstruction</option>
+		<option value="unit">Unit</option>
+		<!--<option value="Invalid">Invalid</option>-->
+	</select>
+	<div id="pencilUsageDesc"></div>
+	<canvas id="drawingCanvas" width="600" height="600" onKeyPress="drawingCanvas_onKeyPress()">Your browser does not support the HTML5 canvas tag.</canvas>
+	<div id="selectionStatusDiv"></div>
+	<div id="timeMachine">
+		<div id="simStatusDiv">
+		</div>
+		<div id="saveLoadControlsDiv">
+			<input id="saveButton" value="Save" type="button" onClick="saveButton_onClick()"></input>
+			<input id="loadButton" value="Load" type="button" onClick="loadButton_onClick()"></input>
+			<div id="dlState"></div>
+			<div id="saveLoadDesc">Note: Saves units, their move orders and the passability grid. Loading restores the saved data, sets the current turn to 0 and enables editing mode.</div>
+		</div>
+		<div id="playControlsDiv">
+			<input id="playButton" value="Play" type="button" onClick="playButton_onClick()"></input>
+			<input id="stopButton" value="Stop" type="button" onClick="stopButton_onClick()"></input>
+		</div>
+		<div id="globalParametersDiv">
+		Turn duration (ms): <input id="simTurnDurationText" value="250" type="text" onChange="simTurnDurationText_onChange()"></input><br/>
+		</div>
+		<div class="rangeBox">
+			<input id="turnLeftButton" type="button" value="<" onClick="turnLeftButton_onClick()"></input>
+			<input id="turnText" type="text" value="0" onChange="turnText_onChange()"></input>
+			<input id="turnRightButton" type="button" value=">" onClick="turnRightButton_onClick()"></input><br/>
+		</div>
+		<div class="rangeBox">
+			<input id="stepLeftButton" type="button" value="<" onClick="stepLeftButton_onClick()"></input>
+			<input id="stepRange" type="range" value="0" onChange="stepRange_onChange()"></input>
+			<input id="stepRightButton" type="button" value=">" onClick="stepRightButton_onClick()"></input><br/>
+			<div id="stepLabel">0</div>
+		</div>
+		
+	</div>
+	<script type="text/javascript">
+	let drawingCanvas = document.getElementById("drawingCanvas");
+	let coordSpace = new CoordSpace(50, 50);
+	let visualization = new Visualization(drawingCanvas, coordSpace);
+	let grid = new Grid(coordSpace, visualization);
+	let unitManager = new UnitManager(grid, visualization);
+	let drawingArea = new DrawingArea(drawingCanvas, grid, coordSpace);
+	let simTurnDurationText = document.getElementById("simTurnDurationText");
+	let simTurnDuration = simTurnDurationText.value;
+
+	let simulation = new Simulation([grid]);
+	let simStartState = {};
+	
+	drawingCanvas.addEventListener('click', drawingCanvas_onClick, false);
+	drawingCanvas.addEventListener('mousedown', drawingCanvas_onMouseDown, false);
+	drawingCanvas.addEventListener('mouseup', drawingCanvas_onMouseUp, false);
+	drawingCanvas.addEventListener('mouseout', drawingCanvas_onMouseOut, false);
+	drawingCanvas.addEventListener('mousemove', drawingCanvas_onMouseMove, false);
+
+	document.onkeydown = document_onKeyDown;
+	document.onkeyup = document_onKeyUp;
+
+	let editingEnabled = true;
+	let simRunning = false;
+	let lastTurnTime = 0;
+	setSimStatus();
+	simulation.RegisterSimObject("grid", grid);
+	simulation.RegisterSimObject("unitManager", unitManager);
+	
+	let ret = {};
+
+	let unitCreator = new UnitCreator(drawingCanvas, coordSpace, unitManager);
+
+	let timer = setInterval( function(){ onTick() }, simTurnDuration);
+
+	draw();
+	
+	let pencil = new Pencil();
+	let usageDesc = 'Left click: change passability of cell';
+	pencil.AddType("gridObstruction", usageDesc, drawingArea, false, drawingArea.onMouseDown, drawingArea.onMouseUp, drawingArea.onMouseMove, drawingArea.onMouseOut);
+
+	
+	usageDesc = '<b>Click on free space:</b> place unit with default (0&deg;) orientation (along x-axis) <br /\>' +
+		'<b>Click and drag on free space:</b> place unit with specific orientation <br /\>' +
+		'<b>Click on unit:</b> select unit <br /\>' + 
+		'<b>Hold D and click on unit:</b> delete unit <br /\>' +
+		'<b>Hold M while unit(s) selected and click:</b> move order for unit(s) <br /\>'
+
+	pencil.AddType("unit", usageDesc, unitCreator, unitCreator.OnClick, unitCreator.OnMouseDown, unitCreator.OnMouseUp, false /*onMouseMove*/, unitCreator.OnMouseOut, unitCreator.OnKeyDown, unitCreator.OnKeyUp);
+
+	pencilSelect_onChange();
+
+	function saveButton_onClick() {
+		simulation.SaveAllState(simStartState);
+
+		let data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(simStartState));
+		let a = document.createElement('a');
+		a.href = 'data:' + data;
+		a.download = 'data.json';
+		a.innerHTML = 'download state';
+		let container = document.getElementById('dlState');
+		if (container.hasChildNodes()) {
+			container.removeChild(container.childNodes[0]);		
+		}
+		container.appendChild(a);
+	}
+
+	function loadButton_onClick() {
+
+		if (!simStartState.isValid)
+			return;
+
+		setEditingEnabled(true)
+		visualization.reset();
+		let turnTextElem = document.getElementById("turnText");
+		turnTextElem.value = 0;
+		simRunning = false;
+		lastTurnTime = 0;
+		simulation.LoadAllState(simStartState);
+		setSimStatus();
+		draw();
+	}
+	
+	function playButton_onClick() {
+		if (!simRunning) {
+			onSimStart();
+		}
+		setSimStatus();
+	}
+
+	function stopButton_onClick() {
+		simRunning = false;
+		lastTurnTime = 0;
+		setSimStatus();
+	}
+
+	function simTurnDurationText_onChange() {
+		simTurnDuration = simTurnDurationText.value;
+		clearInterval(timer);
+		timer = setInterval( function(){ onTick() }, simTurnDuration);
+	}
+
+	function turnRightButton_onClick() {
+		let elem = document.getElementById("turnText");
+		elem.value = +elem.value + 1;
+		turnText_onChange(); // for some reason the event doesn't get called
+	}
+
+	function turnLeftButton_onClick() {
+		let elem = document.getElementById("turnText");
+		elem.value = +elem.value - 1;
+		turnText_onChange(); // for some reason the event doesn't get called
+	}
+
+	function turnText_onChange() {
+		let turnTextElem = document.getElementById("turnText");
+		
+		let targetTurn = turnTextElem.value;
+		if (!simRunning && targetTurn != 0) {
+			setEditingEnabled(false);
+		}
+		while (simulation.GetCurrentTurn() < targetTurn) {
+			simulation.OnTurn(simTurnDuration);	
+		}		
+
+		setSimStatus();
+		draw();
+	}
+
+	function onSimStart() {
+		simRunning = true;
+		setEditingEnabled(false);
+	}
+
+	function stepRightButton_onClick() {
+		let elem = document.getElementById("stepRange").stepUp();
+		stepRange_onChange(); // for some reason the event doesn't get called
+	}
+
+	function stepLeftButton_onClick() {
+		let elem = document.getElementById("stepRange").stepDown();
+		stepRange_onChange(); // for some reason the event doesn't get called
+	}
+
+	function stepRange_onChange() {
+		let div = document.querySelector("#stepLabel");
+		let stepRangeElem = document.getElementById("stepRange");
+		div.innerHTML = stepRangeElem.value;
+	}
+	
+	function pencilSelect_onChange() {
+		let elem = document.getElementById("pencilSelect");
+		pencil.SetActive(elem.options[elem.selectedIndex].value);
+		let div = document.querySelector("#pencilUsageDesc");
+		div.innerHTML = pencil.GetUsageDesc();
+	}
+	function drawingCanvas_onClick(event) {
+		pencil.onClick(event);
+		draw();
+	}
+	function drawingCanvas_onMouseDown(event) {
+		pencil.onMouseDown(event);
+		draw();
+	}
+	function drawingCanvas_onMouseUp(event) {
+		pencil.onMouseUp(event);
+	}
+	function drawingCanvas_onMouseMove(event) {
+		pencil.onMouseMove(event);
+		draw();
+	}
+	function drawingCanvas_onMouseOut(event) {
+		pencil.onMouseOut(event);
+	}
+	function document_onKeyDown(event) {
+		pencil.onKeyDown(event);
+	}
+	function document_onKeyUp(event) {
+		pencil.onKeyUp(event);
+	}
+
+	function onTick() {
+		//unit1.onTick();
+		//draw();
+		turnTime = Date.now();
+		if (simRunning)
+		{
+			if (lastTurnTime != 0) {
+		
+				let turnText = document.getElementById("turnText");
+				let turnNbr = +turnText.value + 1;
+				turnText.value = turnNbr;
+				
+
+				if (simulation.GetCurrentTurn() < turnNbr)
+					simulation.OnTurn(turnTime - lastTurnTime);
+				draw();
+			}
+			
+		}
+		lastTurnTime = turnTime;
+	}
+
+	function setEditingEnabled(enabled) {
+		editingEnabled = !!enabled;
+		pencil.SetEnabled(enabled);
+	}
+
+	function setSimStatus() {
+		let div = document.querySelector("#simStatusDiv");
+		let turnTextElem = document.getElementById("turnText");
+		let guiTurn = turnTextElem.value;
+
+		if (editingEnabled)
+			div.innerHTML = "Editing mode...";
+		else if (simRunning)
+			div.innerHTML = "Simulation running...";
+		else if (simulation.GetCurrentTurn() == guiTurn)
+			div.innerHTML = "Simulation paused...";
+		else if (simulation.GetCurrentTurn() > guiTurn)
+			div.innerHTML = "Visualization rewind...";
+		else
+			div.innerHTML = "Unknown... !?!";
+	}
+
+	function draw() {
+
+		// Order of drawing matters (some things are drawn over others)
+		
+		drawingArea.DrawGrid();
+
+		// TODO: selection needs to be reworked
+		let turnTextElem = document.getElementById("turnText");
+		visualization.drawSummary(turnTextElem.value,["longrange", "shortrange"], [unitCreator.selectedUnit.id]);
+
+		for (unit of unitManager.units) {
+			drawingArea.DrawUnit(unit);
+		}
+	}	
+	</script>
+</body>
+</html>
