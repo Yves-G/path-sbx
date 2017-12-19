@@ -15,10 +15,12 @@
 	<script src="Unit.js"></script>
 	<script src="UnitCreator.js"></script>
 	<script src="UnitManager.js"></script>
-	<script src="UnitMotion.js"></script>
 	<script src="Utility.js"></script>
 	<script src="Vector.js"></Script>
 	<script src="Visualization.js"></script>
+
+	<script src="basic_singleunit/UnitMotion.js"></script>
+	<script src="basic_singleunit/GridAStar.js"></script>
 </head>
 <body>
 	Pencil: 
@@ -64,14 +66,18 @@
 	let coordSpace = new CoordSpace(50, 50);
 	let visualization = new Visualization(drawingCanvas, coordSpace);
 	let grid = new Grid(coordSpace, visualization);
-	let unitManager = new UnitManager(grid, visualization);
 	let drawingArea = new DrawingArea(drawingCanvas, grid, coordSpace);
+	let simulation = new Simulation([grid]);
+
+	// pathfinder specific objects
+
+	// 1. basic_singleunit
+	let unitManager = new UnitManager(grid, visualization, UnitMotionBasicSingle);
+
+	let simStartState = {};
 	let simTurnDurationText = document.getElementById("simTurnDurationText");
 	let simTurnDuration = simTurnDurationText.value;
 
-	let simulation = new Simulation([grid]);
-	let simStartState = {};
-	
 	drawingCanvas.addEventListener('click', drawingCanvas_onClick, false);
 	drawingCanvas.addEventListener('mousedown', drawingCanvas_onMouseDown, false);
 	drawingCanvas.addEventListener('mouseup', drawingCanvas_onMouseUp, false);

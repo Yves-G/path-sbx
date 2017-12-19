@@ -1,7 +1,8 @@
-function UnitManager(grid, visualization)
+function UnitManager(grid, visualization, unitMotionConstr)
 {
 	this.grid = grid;
 	this.visualization = visualization;
+	this.unitMotionContr = unitMotionConstr;
 	this.units = [];
 	this.nextUnitId = 1;
 }
@@ -24,7 +25,7 @@ UnitManager.prototype.LoadState = function(state)
 	this.units = [];
 
 	for (let unitState of state.units) {
-		let unit = new Unit(this.grid, this.visualization);
+		let unit = new Unit(this.grid, this.visualization, this.unitMotionContr);
 		unit.LoadState(unitState);
 		this.units.push(unit);
 	}
@@ -33,7 +34,7 @@ UnitManager.prototype.LoadState = function(state)
 
 UnitManager.prototype.AddUnit = function(posX, posZ, orientation, obstructionSize)
 {
-	let unit = new Unit(this.grid, this.visualization)
+	let unit = new Unit(this.grid, this.visualization, this.unitMotionContr)
 	unit.Init(this.nextUnitId++, posX, posZ, orientation, obstructionSize);
 	this.units.push(unit);
 	return unit;

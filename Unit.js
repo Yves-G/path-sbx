@@ -1,4 +1,4 @@
-function Unit(grid, visualization)
+function Unit(grid, visualization, unitMotionConstr)
 {
 	this.id = -1;
 	this.pos = new Vector2D();
@@ -7,7 +7,7 @@ function Unit(grid, visualization)
 	this.selected = false
 	this.color = "#0000FF";
 
-	this.unitMotion = new UnitMotion(grid, visualization, this);
+	this.unitMotion = new unitMotionConstr(grid, visualization, this);
 }
 
 Unit.prototype.Init = function(id, posX, posZ, orientation, obstructionSize)

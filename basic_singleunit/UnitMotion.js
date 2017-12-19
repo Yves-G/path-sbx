@@ -1,6 +1,7 @@
-function UnitMotion(grid, visualization, unit)
+function UnitMotionBasicSingle(grid, visualization, unit)
 {
 	this.grid = grid;
+	this.gridAStar = new GridAStar(this.grid);
 	this.visualization = visualization;
 	this.unit = unit;
 	this.pathGoal = new Vector2D();
@@ -11,7 +12,7 @@ function UnitMotion(grid, visualization, unit)
 	this.speed = 1.0; // speed in m/s
 }
 
-UnitMotion.prototype.SaveState = function(state)
+UnitMotionBasicSingle.prototype.SaveState = function(state)
 {
 	state.pathGoalX = this.pathGoal.x;
 	state.pathGoalY = this.pathGoal.y;
@@ -21,7 +22,7 @@ UnitMotion.prototype.SaveState = function(state)
 	state.speed = this.speed; // speed in m/s
 }
 
-UnitMotion.prototype.LoadState = function(state)
+UnitMotionBasicSingle.prototype.LoadState = function(state)
 {
 	this.pathGoal = new Vector2D(state.pathGoalX, state.pathGoalY);
 	this.pathGoalNavcell = state.pathGoalNavcell;
@@ -30,18 +31,18 @@ UnitMotion.prototype.LoadState = function(state)
 	this.speed = state.speed; // speed in m/s
 }
 
-UnitMotion.prototype.SetPathGoal = function(posX, posZ)
+UnitMotionBasicSingle.prototype.SetPathGoal = function(posX, posZ)
 {
 	this.pathGoal.set(posX, posZ);
 	this.pathGoalNavcell = this.grid.GetCellId(posX, posZ);
 }
 
-UnitMotion.prototype.GetPathGoal = function() 
+UnitMotionBasicSingle.prototype.GetPathGoal = function() 
 {
 	return this.pathGoal;
 }
 
-UnitMotion.prototype.HasReachedGoal = function()
+UnitMotionBasicSingle.prototype.HasReachedGoal = function()
 {
 	let pos = this.unit.pos;
 	if (this.pathGoalNavcell == this.grid.GetCellId(pos.x, pos.y))
@@ -49,12 +50,12 @@ UnitMotion.prototype.HasReachedGoal = function()
 	return false;
 }
 
-UnitMotion.prototype.GetPathGoalNavcell = function() 
+UnitMotionBasicSingle.prototype.GetPathGoalNavcell = function() 
 {
 	return this.pathGoalNavcell;
 }
 
-UnitMotion.prototype.OnTurn = function(turn, timePassed)
+UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 {
 	// It's more convenient to calculate speed in m/s instead of m/msec
 	
@@ -68,7 +69,7 @@ UnitMotion.prototype.OnTurn = function(turn, timePassed)
 		let start = this.grid.GetCellId(this.unit.pos.x, this.unit.pos.y, {}, {});
 		let goal = this.pathGoalNavcell;
 		let ret = {};
-		this.grid.aStar(start, goal, ret);
+		this.gridAStar.aStar(start, goal, ret);
 		this.visualization.addSummaryData("longrange", "gridOverlay", turn, this.unit.id, ret.visualizationSummaryData);
 		this.longPath = ret.totalPath;
 	}
@@ -132,7 +133,7 @@ UnitMotion.prototype.OnTurn = function(turn, timePassed)
 
 
 // Just make vectors from the list of navcells we have in the long path
-UnitMotion.prototype.GetShortPaths = function() 
+UnitMotionBasicSingle.prototype.GetShortPaths = function() 
 {
 	let cols = this.grid.cols;
 	let rows = this.grid.rows;
