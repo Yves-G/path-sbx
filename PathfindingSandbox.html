@@ -25,13 +25,18 @@
 	<script src="group/UnitMotionGroup.js"></script>
 </head>
 <body>
-	Pencil: 
-	<select id="pencilSelect" onChange="pencilSelect_onChange()">
-		<option value="gridObstruction">Grid obstruction</option>
-		<option value="unit">Unit</option>
-		<!--<option value="Invalid">Invalid</option>-->
-	</select>
-	<div id="pencilUsageDesc"></div>
+	<div id="helpTextDiv">
+	</div>
+	<div id="helpTextOverlayDiv" onClick="helpTextOverlayDiv_onClick()"></div>
+	<div id="editingControls">
+		Pencil:
+		<select id="pencilSelect" onChange="pencilSelect_onChange()">
+			<option value="gridObstruction">Grid obstruction</option>
+			<option value="unit">Unit</option>
+			<!--<option value="Invalid">Invalid</option>-->
+		</select>
+		<input id="pencilHelpButton" value="Help" type="button" onClick="pencilHelpButton_onClick()"></input>
+	</div>
 	<canvas id="drawingCanvas" width="600" height="600" onKeyPress="drawingCanvas_onKeyPress()">Your browser does not support the HTML5 canvas tag.</canvas>
 	<div id="selectionStatusDiv"></div>
 	<div id="timeMachine">
@@ -93,6 +98,7 @@
 	document.onkeydown = document_onKeyDown;
 	document.onkeyup = document_onKeyUp;
 
+	let helpVisible = false;
 	let editingEnabled = true;
 	let simRunning = false;
 	let lastTurnTime = 0;
@@ -225,8 +231,17 @@
 	function pencilSelect_onChange() {
 		let elem = document.getElementById("pencilSelect");
 		pencil.SetActive(elem.options[elem.selectedIndex].value);
-		let div = document.querySelector("#pencilUsageDesc");
-		div.innerHTML = pencil.GetUsageDesc();
+	}
+	function helpTextOverlayDiv_onClick() {
+		toggleHelp();
+	}
+	function pencilHelpButton_onClick() {
+		let elem = document.getElementById("pencilSelect");
+
+		let helpTextDiv = document.querySelector("#helpTextDiv");
+		helpTextDiv.innerHTML = pencil.GetUsageDesc();
+
+		showHelp("Pencil usage", pencil.GetUsageDesc());
 	}
 	function drawingCanvas_onClick(event) {
 		pencil.onClick(event);
@@ -337,6 +352,29 @@
 			let container = document.getElementById("visualizationList");
 			container.appendChild(checkbox);
 			container.appendChild(label);
+		}
+	}
+
+	function showHelp(title, text) {
+		let helpTextDiv = document.querySelector("#helpTextDiv");
+		helpTextDiv.innerHTML = '<div id="helpTitleDiv">' + title + '</div>';
+		helpTextDiv.innerHTML += text;
+		toggleHelp();
+	}
+	function toggleHelp() {
+
+		helpVisible = !helpVisible;
+
+		let helpTextDiv = document.querySelector("#helpTextDiv");
+		let helpTextOverlayDiv = document.querySelector("#helpTextOverlayDiv");
+
+		if (helpVisible) {
+			helpTextDiv.style.display='block';
+			helpTextOverlayDiv.style.display='block';
+		} else {
+			helpTextDiv.style.display='none';
+			helpTextOverlayDiv.style.display='none';
+			helpTextDiv.innerHTML = "";
 		}
 	}	
 	</script>

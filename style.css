@@ -12,12 +12,40 @@ div {
 	float: left;
 }
 
-#pencilUsageDesc {
-	border-style: solid;
-	border-width: 1px;
-	border-color: #d3d3d3;
-	width: 600px;
-	clear: right;
+#editingControls {
+	border: none;
+}
+
+#helpTextDiv {
+  display: none;
+  position: absolute;
+  top: 25%;
+  left: 25%;
+  width: 50%;
+  height: 50%;
+  padding: 16px;
+  border: 2px solid orange;
+  background-color: white;
+  z-index: 1002;
+  overflow: auto;
+}
+
+#helpTitleDiv {
+	font-size: 1.5em;
+	line-height: 2em;
+	border: none;
+}
+
+#helpTextOverlayDiv {
+	display: none;
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	z-index: 1001;
+	opacity: .80;
 }
 
 #saveLoadDesc {
