@@ -21,6 +21,8 @@
 
 	<script src="basic_singleunit/UnitMotion.js"></script>
 	<script src="basic_singleunit/GridAStar.js"></script>
+
+	<script src="group/UnitMotionGroup.js"></script>
 </head>
 <body>
 	Pencil: 
@@ -76,7 +78,7 @@
 	// pathfinder specific objects
 
 	// 1. basic_singleunit
-	let unitManager = new UnitManager(grid, visualization, UnitMotionBasicSingle);
+	let unitManager = new UnitManager(grid, visualization, UnitMotionGroup);
 
 	let simStartState = {};
 	let simTurnDurationText = document.getElementById("simTurnDurationText");
