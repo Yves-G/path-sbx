@@ -92,7 +92,7 @@ Visualization.prototype.drawGridOverlay = function(overlay)
 		let iTrans = this.coordSpace.maxHeight - Math.floor(nodeId / this.coordSpace.maxWidth) - 1; // adjust to different coordinate system
 		let j = nodeId % this.coordSpace.maxWidth
 	
-		colors = [ "#00FF00", "#FF0000", "#0000FF" ]
+		colors = [ "#00FF0080", "#FF000080", "#0000FF80" ]
 		this.ctx.fillStyle = colors[nodeType];
 		
 		if (nodeType > 2)
