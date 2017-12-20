@@ -108,27 +108,6 @@ UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 			this.shortPaths.shift();
 		}
 	}
-	
-//	// move as much as it would be possible according to time passed since last movement and
-//	// unit speed. Stop moving if the goal is reached.
-//	while (timeLeft && this.pathGoal.length() != 0) {
-//		let wp = shortPaths.shift(); // next waypoint
-//		let moveVec = Vecto2D.sub(wp, this.unit.pos);
-//
-//		if (moveVec.length() > this.speed * timeLeft) {
-//			let newLen = moveVec.length() - this.speed;
-//			moveVec.mult(newLen/moveVec.length());
-//			shortPaths.unshift(wp); // didn't reach the waypoint, add it again.
-//			this.unit.pos.add(moveVec); // move
-//			return;
-//		}
-//		else {
-//			this.unit.pos = wp; // move to waypoint
-//			// reduce timeLeft according to speed
-//			// timeLeft in milliseconds, speed in meters per second
-//			timeLeft -= Vector2D.sub(this.unit.pos, wp).length() / this.speed;
-//		}
-//	}
 }
 
 
