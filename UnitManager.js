@@ -5,6 +5,9 @@ function UnitManager(grid, visualization, unitMotionConstr)
 	this.unitMotionContr = unitMotionConstr;
 	this.units = [];
 	this.nextUnitId = 1;
+
+	this.visualization.addVisualizationInfo("longrange");
+	this.visualization.addVisualizationInfo("shortrange");
 }
 
 UnitManager.prototype.SaveState = function(state)

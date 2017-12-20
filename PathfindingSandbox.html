@@ -59,6 +59,10 @@
 			<input id="stepRightButton" type="button" value=">" onClick="stepRightButton_onClick()"></input><br/>
 			<div id="stepLabel">0</div>
 		</div>
+
+		<div id="visualizationConfigDiv">
+			<div id="visualizationList"></div>
+		</div>
 		
 	</div>
 	<script type="text/javascript">
@@ -91,6 +95,7 @@
 	let simRunning = false;
 	let lastTurnTime = 0;
 	setSimStatus();
+	populateVisualizationConfig();
 	simulation.RegisterSimObject("grid", grid);
 	simulation.RegisterSimObject("unitManager", unitManager);
 	
@@ -296,12 +301,40 @@
 		
 		drawingArea.DrawGrid();
 
-		// TODO: selection needs to be reworked
 		let turnTextElem = document.getElementById("turnText");
-		visualization.drawSummary(turnTextElem.value,["longrange", "shortrange"], [unitCreator.selectedUnit.id]);
+		let enabledVis = [];
+
+		let nodes = document.getElementById('visualizationList').childNodes;
+		for(node of nodes) {
+			if (node.id == "cbxVis" + node.name && node.checked) {
+				enabledVis.push(node.name);
+			}
+		}
+
+		visualization.drawSummary(turnTextElem.value,enabledVis, [unitCreator.selectedUnit.id]);
 
 		for (unit of unitManager.units) {
 			drawingArea.DrawUnit(unit);
+		}
+	}
+
+	function populateVisualizationConfig() {
+		let visInfo = visualization.getVisualizationInfo();
+		for (vis of visInfo) {
+			let checkbox = document.createElement('input');
+			checkbox.type = "checkbox";
+			checkbox.name = vis;
+			checkbox.value = vis;
+			checkbox.id = "cbxVis" + vis;
+			checkbox.setAttribute("onchange", "draw()");
+
+			let label = document.createElement('label')
+			label.htmlFor = "cbxVis" + vis;
+			label.appendChild(document.createTextNode(vis));
+
+			let container = document.getElementById("visualizationList");
+			container.appendChild(checkbox);
+			container.appendChild(label);
 		}
 	}	
 	</script>

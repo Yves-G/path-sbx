@@ -12,12 +12,23 @@ function Visualization(canvas, coordSpace)
 	//                        [detailedData"] 
 	 
 	this.elements = [];
+	this.availableVisualizations = new Set();
 
 }
 
 Visualization.prototype.reset = function()
 {
 	this.elements = [];
+}
+
+Visualization.prototype.getVisualizationInfo = function(name)
+{
+	return this.availableVisualizations;
+}
+
+Visualization.prototype.addVisualizationInfo = function(name)
+{
+	this.availableVisualizations.add(name);
 }
 
 // use objId=0 when only one object per elementName is used
