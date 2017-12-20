@@ -34,7 +34,7 @@ UnitMotionBasicSingle.prototype.LoadState = function(state)
 UnitMotionBasicSingle.prototype.SetPathGoal = function(posX, posZ)
 {
 	this.pathGoal.set(posX, posZ);
-	this.pathGoalNavcell = this.grid.GetCellId(posX, posZ);
+	this.pathGoalNavcell = this.grid.GetCellIdP(posX, posZ);
 }
 
 UnitMotionBasicSingle.prototype.GetPathGoal = function() 
@@ -45,7 +45,7 @@ UnitMotionBasicSingle.prototype.GetPathGoal = function()
 UnitMotionBasicSingle.prototype.HasReachedGoal = function()
 {
 	let pos = this.unit.pos;
-	if (this.pathGoalNavcell == this.grid.GetCellId(pos.x, pos.y))
+	if (this.pathGoalNavcell == this.grid.GetCellIdP(pos.x, pos.y))
 		return true;
 	return false;
 }
@@ -66,7 +66,7 @@ UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 		return;
 
 	if (!this.longPath && this.shortPaths.length == 0) {
-		let start = this.grid.GetCellId(this.unit.pos.x, this.unit.pos.y, {}, {});
+		let start = this.grid.GetCellIdP(this.unit.pos.x, this.unit.pos.y);
 		let goal = this.pathGoalNavcell;
 		let ret = {};
 		this.gridAStar.aStar(start, goal, ret);
