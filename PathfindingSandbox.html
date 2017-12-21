@@ -150,28 +150,15 @@
 		if (!simStartState.isValid)
 			return;
 
-		setEditingEnabled(true)
-		visualization.reset();
-		let turnTextElem = document.getElementById("turnText");
-		turnTextElem.value = 0;
-		simRunning = false;
-		lastTurnTime = 0;
-		simulation.LoadAllState(simStartState);
-		setSimStatus();
-		draw();
+		onSimEnd();
 	}
 	
 	function playButton_onClick() {
-		if (!simRunning) {
-			onSimStart();
-		}
-		setSimStatus();
+		startOrResumeSim();
 	}
 
 	function stopButton_onClick() {
-		simRunning = false;
-		lastTurnTime = 0;
-		setSimStatus();
+		onSimPause();
 	}
 
 	function simTurnDurationText_onChange() {
@@ -193,23 +180,52 @@
 	}
 
 	function turnText_onChange() {
+
+		startOrResumeSim();
+
 		let turnTextElem = document.getElementById("turnText");
-		
 		let targetTurn = turnTextElem.value;
-		if (!simRunning && targetTurn != 0) {
-			setEditingEnabled(false);
-		}
+
 		while (simulation.GetCurrentTurn() < targetTurn) {
 			simulation.OnTurn(simTurnDuration);	
-		}		
+		}
 
-		setSimStatus();
+		onSimPause();
 		draw();
 	}
 
+	function startOrResumeSim() {
+		if (!simRunning) {
+			if (editingEnabled)
+				onSimStart();
+			else
+				onSimResume();
+		}
+	}
 	function onSimStart() {
 		simRunning = true;
 		setEditingEnabled(false);
+		setSimStatus();
+	}
+	function onSimPause() {
+		simRunning = false;
+		lastTurnTime = 0;
+		setSimStatus();
+	}
+	function onSimResume() {
+		simRunning = true;
+		setSimStatus();
+	}
+	function onSimEnd() {
+		visualization.reset();
+		let turnTextElem = document.getElementById("turnText");
+		turnTextElem.value = 0;
+		simulation.LoadAllState(simStartState);
+		lastTurnTime = 0;
+		simRunning = false;
+		setEditingEnabled(true);
+		setSimStatus();
+		draw();
 	}
 
 	function stepRightButton_onClick() {
