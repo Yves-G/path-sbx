@@ -1,9 +1,9 @@
-function UnitManager(grid, visualization, unitMotionConstr)
+function UnitManager(grid, visualization)
 {
 	this.grid = grid;
 	this.visualization = visualization;
-	this.unitMotionContr = unitMotionConstr;
 	this.units = [];
+	this.unitMotionObjects = [];
 	this.nextUnitId = 1;
 
 	this.visualization.addVisualizationInfo("longrange");
@@ -28,11 +28,23 @@ UnitManager.prototype.LoadState = function(state)
 	this.units = [];
 
 	for (let unitState of state.units) {
-		let unit = new Unit(this.grid, this.visualization, this.unitMotionContr);
+		let unit = new Unit(this.grid, this.visualization);
 		unit.LoadState(unitState);
 		this.units.push(unit);
 	}
 	this.nextUnitId = state.nextUnitId;
+}
+
+UnitManager.prototype.SimInit = function(unitMotionConstr)
+{
+	for (let unit of this.units) {
+		this.unitMotionObjects.push(new unitMotionConstr(this.grid, this.visualization, unit));
+	}
+}
+
+UnitManager.prototype.SimDestroy = function()
+{
+	this.unitMotionObjects = [];
 }
 
 UnitManager.prototype.AddUnit = function(posX, posZ, orientation, obstructionSize)
@@ -80,8 +92,8 @@ UnitManager.prototype.DeleteUnitAt = function(posX, posZ)
 
 UnitManager.prototype.OnTurn = function(timePassed, turn)
 {
-	for (unit of this.units) {
-		unit.unitMotion.OnTurn(timePassed, turn);
+	for (unitMotion of this.unitMotionObjects) {
+		unitMotion.OnTurn(timePassed, turn);
 	}
 }
 

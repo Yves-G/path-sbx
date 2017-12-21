@@ -4,55 +4,23 @@ function UnitMotionBasicSingle(grid, visualization, unit)
 	this.gridAStar = new GridAStar(this.grid);
 	this.visualization = visualization;
 	this.unit = unit;
-	this.pathGoal = new Vector2D();
-	this.pathGoalNavcell = 0;
 	this.longPath = false;
 	// a queue of points with waypoint positions
 	this.shortPaths = [];
-	this.speed = 1.0; // speed in m/s
 }
 
-UnitMotionBasicSingle.prototype.SaveState = function(state)
+UnitMotionBasicSingle.prototype.GetPathGoalNavcell = function() 
 {
-	state.pathGoalX = this.pathGoal.x;
-	state.pathGoalY = this.pathGoal.y;
-	state.pathGoalNavcell = this.pathGoalNavcell;
-//	state.longPath = this.longPath;
-//	state.shortPaths = this.shortPaths;
-	state.speed = this.speed; // speed in m/s
-}
-
-UnitMotionBasicSingle.prototype.LoadState = function(state)
-{
-	this.pathGoal = new Vector2D(state.pathGoalX, state.pathGoalY);
-	this.pathGoalNavcell = state.pathGoalNavcell;
-//	this.longPath = state.longPath;
-//	this.shortPaths = state.shortPaths;
-	this.speed = state.speed; // speed in m/s
-}
-
-UnitMotionBasicSingle.prototype.SetPathGoal = function(posX, posZ)
-{
-	this.pathGoal.set(posX, posZ);
-	this.pathGoalNavcell = this.grid.GetCellIdP(posX, posZ);
-}
-
-UnitMotionBasicSingle.prototype.GetPathGoal = function() 
-{
-	return this.pathGoal;
+	let goal = this.unit.GetPathGoal();
+	return this.grid.GetCellIdP(goal.x, goal.y);
 }
 
 UnitMotionBasicSingle.prototype.HasReachedGoal = function()
 {
 	let pos = this.unit.pos;
-	if (this.pathGoalNavcell == this.grid.GetCellIdP(pos.x, pos.y))
+	if (this.GetPathGoalNavcell() == this.grid.GetCellIdP(pos.x, pos.y))
 		return true;
 	return false;
-}
-
-UnitMotionBasicSingle.prototype.GetPathGoalNavcell = function() 
-{
-	return this.pathGoalNavcell;
 }
 
 UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
@@ -62,12 +30,12 @@ UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 //	timePassed = 250; // use for debugging
 	let timeLeft = timePassed / 1000;
 
-	if (this.pathGoal.length() == 0 || this.HasReachedGoal())
+	if (this.unit.GetPathGoal().length() == 0 || this.HasReachedGoal())
 		return;
 
 	if (!this.longPath && this.shortPaths.length == 0) {
 		let start = this.grid.GetCellIdP(this.unit.pos.x, this.unit.pos.y);
-		let goal = this.pathGoalNavcell;
+		let goal = this.GetPathGoalNavcell();
 		let ret = {};
 		this.gridAStar.aStar(start, goal, ret);
 		this.visualization.addSummaryData("longrange", "gridOverlay", turn, this.unit.id, ret.visualizationSummaryData);
@@ -93,9 +61,9 @@ UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 	while (timeLeft && this.shortPaths.length != 0) {
 		let pathVec = this.shortPaths[0];
 		
-		if (pathVec.length() > this.speed * timeLeft) {
+		if (pathVec.length() > this.unit.speed * timeLeft) {
 			let moveVec = Vector2D.clone(pathVec);
-			let moveLen = this.speed * timeLeft;
+			let moveLen = this.unit.speed * timeLeft;
 			moveVec.mult(moveLen/moveVec.length());
 			this.unit.pos.add(moveVec);
 			pathVec = pathVec.mult((pathVec.length() - moveLen) / pathVec.length())
@@ -104,7 +72,7 @@ UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 		else {
 			this.unit.pos.add(pathVec);
 			// timeLeft in seconds, speed in meters per second
-			timeLeft -= pathVec.length() / this.speed;
+			timeLeft -= pathVec.length() / this.unit.speed;
 			this.shortPaths.shift();
 		}
 	}

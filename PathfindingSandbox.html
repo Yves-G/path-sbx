@@ -83,7 +83,7 @@
 	// pathfinder specific objects
 
 	// 1. basic_singleunit
-	let unitManager = new UnitManager(grid, visualization, UnitMotionGroup);
+	let unitManager = new UnitManager(grid, visualization);
 
 	let simStartState = {};
 	let simTurnDurationText = document.getElementById("simTurnDurationText");
@@ -205,6 +205,7 @@
 	function onSimStart() {
 		simRunning = true;
 		setEditingEnabled(false);
+		unitManager.SimInit(UnitMotionGroup);
 		setSimStatus();
 	}
 	function onSimPause() {
@@ -224,6 +225,7 @@
 		lastTurnTime = 0;
 		simRunning = false;
 		setEditingEnabled(true);
+		unitManager.SimDestroy();
 		setSimStatus();
 		draw();
 	}

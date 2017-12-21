@@ -50,7 +50,7 @@ UnitCreator.prototype.OnMouseUp = function(event)
 	else if (this.mKeyDown) {
 		if (!this.selectedUnit)
 			return;
-		this.selectedUnit.unitMotion.SetPathGoal(posX, posZ);
+		this.selectedUnit.SetPathGoal(posX, posZ);
 	}
 	// create/select unit
 	else { 
@@ -70,13 +70,11 @@ UnitCreator.prototype.OnMouseUp = function(event)
 	if (this.selectedUnit) {
 		
 		this.selectedUnit.SetSelected(true);
-		let pathGoal = this.selectedUnit.unitMotion.GetPathGoal();
-		let pathGoalNavcell = this.selectedUnit.unitMotion.GetPathGoalNavcell();
+		let pathGoal = this.selectedUnit.GetPathGoal();
 		div.innerHTML = "Position: " + Math.round(this.selectedUnit.pos.x * 100) / 100 + " / " + Math.round(this.selectedUnit.pos.y * 100) / 100 + "<br /\>" +
 			"Obstruction size: " + Math.round(this.selectedUnit.obstructionSize * 100) / 100 + "<br /\>" +
 			"Orientation: " + Math.round(this.selectedUnit.orientation / Math.PI * 180 * 100) / 100 + "&deg; <br /\>" +
-			"Path goal: " + Math.round(pathGoal.x * 100) / 100 + "/" + Math.round(pathGoal.y * 100) / 100 + "<br /\>" +
-			"Path goal navcell: " + pathGoalNavcell;
+			"Path goal: " + Math.round(pathGoal.x * 100) / 100 + "/" + Math.round(pathGoal.y * 100) / 100 + "<br /\>";
 	}
 	else {
 		div.innerHTML = "";

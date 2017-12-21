@@ -58,7 +58,7 @@ DrawingArea.prototype.DrawUnit = function(unit) {
 	let centerY = 0;
 
 	// draw path goal (draw that first so that the unit is drawn on top of the goal indicator)
-	let pathGoal = unit.unitMotion.GetPathGoal();
+	let pathGoal = unit.GetPathGoal();
 	if (pathGoal.length() != 0 && unit.selected) {
 	
 		// It's a bit confusing because the pathGoal vector uses x and y properties to store the world space x and z coordinates
