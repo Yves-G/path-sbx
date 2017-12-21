@@ -252,11 +252,6 @@
 		toggleHelp();
 	}
 	function pencilHelpButton_onClick() {
-		let elem = document.getElementById("pencilSelect");
-
-		let helpTextDiv = document.querySelector("#helpTextDiv");
-		helpTextDiv.innerHTML = pencil.GetUsageDesc();
-
 		showHelp("Pencil usage", pencil.GetUsageDesc());
 	}
 	function drawingCanvas_onClick(event) {
