@@ -322,6 +322,8 @@
 	function setEditingEnabled(enabled) {
 		editingEnabled = !!enabled;
 		pencil.SetEnabled(enabled);
+		document.getElementById("pencilSelect").disabled = !enabled;
+		document.getElementById("pathfinderSelect").disabled = !enabled;
 	}
 
 	function setSimStatus() {
