@@ -8,7 +8,8 @@
 </style>
 	<script src="CoordinateSpace.js"></script>
 	<script src="DrawingArea.js"></script>
-	<script src="Grid.js"></script> 
+	<script src="Grid.js"></script>
+	<script src="PathfinderSelector.js"></script>
 	<script src="Pencil.js"></script>
 	<script src="PriorityQueue.js"></script>
 	<script src="Simulation.js"></script>
@@ -36,6 +37,10 @@
 			<!--<option value="Invalid">Invalid</option>-->
 		</select>
 		<input id="pencilHelpButton" value="Help" type="button" onClick="pencilHelpButton_onClick()"></input>
+		<br/>Pathfinder:
+		<select id="pathfinderSelect">
+		</select>
+		<input id="pathfinderHelpButton" value="Help" type="button" onClick="pathfinderHelpButton_onClick()"></input>
 	</div>
 	<canvas id="drawingCanvas" width="600" height="600" onKeyPress="drawingCanvas_onKeyPress()">Your browser does not support the HTML5 canvas tag.</canvas>
 	<div id="selectionStatusDiv"></div>
@@ -78,6 +83,7 @@
 	let visualization = new Visualization(drawingCanvas, coordSpace);
 	let grid = new Grid(coordSpace, visualization);
 	let drawingArea = new DrawingArea(drawingCanvas, grid, coordSpace);
+	let pathfinderSelector = new PathfinderSelector();
 	let simulation = new Simulation([grid]);
 
 	// pathfinder specific objects
@@ -104,6 +110,7 @@
 	let lastTurnTime = 0;
 	setSimStatus();
 	populateVisualizationConfig();
+	populatePathfinderSelection();
 	simulation.RegisterSimObject("grid", grid);
 	simulation.RegisterSimObject("unitManager", unitManager);
 	
@@ -203,9 +210,12 @@
 		}
 	}
 	function onSimStart() {
+		let elem = document.getElementById("pathfinderSelect");
+		let unitMotionName = elem.options[elem.selectedIndex].value;
+		let unitMotionConstr = pathfinderSelector.GetPathfinders().get(unitMotionName).unitMotionConstructor;
 		simRunning = true;
 		setEditingEnabled(false);
-		unitManager.SimInit(UnitMotionGroup);
+		unitManager.SimInit(unitMotionConstr);
 		setSimStatus();
 	}
 	function onSimPause() {
@@ -255,6 +265,12 @@
 	}
 	function pencilHelpButton_onClick() {
 		showHelp("Pencil usage", pencil.GetUsageDesc());
+	}
+	function pathfinderHelpButton_onClick() {
+		let elem = document.getElementById("pathfinderSelect");
+		let pathfinderName = elem.options[elem.selectedIndex].value;
+		let pathfinderDesc = pathfinderSelector.GetPathfinders().get(pathfinderName).description;
+		showHelp("Pathfinder description", pathfinderDesc);
 	}
 	function drawingCanvas_onClick(event) {
 		pencil.onClick(event);
@@ -345,6 +361,24 @@
 
 		for (unit of unitManager.units) {
 			drawingArea.DrawUnit(unit);
+		}
+	}
+	function populatePathfinderSelection() {
+		pathfinderSelector.AddPathfinder("Basic single unit",
+			`A very basic pathfinder for single units.
+			Units just path around static obstacles and
+			ignore other units (might pass right through them).`,
+			UnitMotionBasicSingle);
+
+		pathfinderSelector.AddPathfinder("Group (WIP)",
+			`Experimental pathfinder, might do things... or not ;)`, UnitMotionGroup);
+
+		let elem = document.getElementById("pathfinderSelect");
+		for ([name, obj] of pathfinderSelector.GetPathfinders()) {
+			let opt = document.createElement('option');
+			opt.value = name;
+			opt.innerHTML = name;
+			elem.appendChild(opt);
 		}
 	}
 
