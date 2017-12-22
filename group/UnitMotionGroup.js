@@ -7,6 +7,11 @@ function UnitMotionGroup(grid, visualization, unit)
 	this.longPath = false;
 	// a queue of points with waypoint positions
 	this.shortPaths = [];
+
+	// number of path waypoints remaining until a new flowfield needs to be built
+	this.flowfieldTriggerCount = 0;
+
+	this.currentTurn;
 }
 
 UnitMotionGroup.prototype.GetPathGoalNavcell = function() 
@@ -25,6 +30,7 @@ UnitMotionGroup.prototype.HasReachedGoal = function()
 
 UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 {
+	this.currentTurn = turn;
 	// It's more convenient to calculate speed in m/s instead of m/msec
 	
 //	timePassed = 250; // use for debugging
@@ -46,18 +52,14 @@ UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 		if (!this.GetShortPaths())
 			return;
 
-		// a copy of the vectors is needed.
-		// they are going to be modified later and the visualization data should remain unchanged
-		let summaryData = { vectors: [] };
-		summaryData["startPoint"] = new Vector2D(this.unit.pos.x, this.unit.pos.y);
-		for (let vec of this.shortPaths) {
-			summaryData.vectors.push(new Vector2D(vec.x, vec.y));
-		}
-		
-		this.visualization.addSummaryData("shortrange", "vectorOverlay", turn, this.unit.id, summaryData);
+		this.AddShortRangeVectorOverlay();
+		this.flowfieldTriggerCount = 0;
 	}
 
-	while (timeLeft && this.shortPaths.length != 0) {
+	while (timeLeft) {
+		if (this.flowfieldTriggerCount == 0) {
+			this.BuildFlowField(turn);
+		}
 		let pathVec = this.shortPaths[0];
 		
 		if (pathVec.length() > this.unit.speed * timeLeft) {
@@ -72,11 +74,88 @@ UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 			this.unit.pos.add(pathVec);
 			// timeLeft in seconds, speed in meters per second
 			timeLeft -= pathVec.length() / this.unit.speed;
-			this.shortPaths.shift();
+			this.MovedPastWaypoint();
 		}
 	}
 }
 
+UnitMotionGroup.prototype.BuildFlowField = function(turn)
+{
+	// Add direction vectors to the path spline unit maxLength is exceeded.
+	// Use that part of the path for one flowfield.
+	let maxLength = 30;
+	let corridorWidth = 10;
+	let currLength = 0;
+	let currVec = Vector2D.clone(this.unit.pos);
+
+	let leftX = currVec.x;
+	let rightX = currVec.x;
+	let bottomZ = currVec.y;
+	let topZ = currVec.y;
+
+	let ix = 0;
+	do
+	{
+		currLength += this.shortPaths[ix].length();
+		currVec.add(this.shortPaths[ix]);
+		leftX = Math.min(leftX, currVec.x);
+		rightX = Math.max(rightX, currVec.x);
+		bottomZ = Math.min(bottomZ, currVec.y);
+		topZ = Math.max(topZ, currVec.y);
+		ix++;
+	} while (currLength < maxLength && ix < this.shortPaths.length)
+
+	if (this.shortPaths.length == ix)
+		this.flowfieldTriggerCount = -1; // -1 indicates the the current flowfield covers the rest of the path
+	else
+		this.flowfieldTriggerCount = ix - 1;
+
+	leftX -= corridorWidth / 2
+	rightX +=  corridorWidth / 2
+	bottomZ -=  corridorWidth / 2
+	topZ += corridorWidth / 2
+
+	// Visualization
+	let overlayObj = {};
+	overlayObj["displayName"] = "Flowfield overlay";
+	overlayObj["nodeTypeNames"] = [ "Flowfield boundary"];
+	overlayObj["nodes"] = new Map();
+
+	// also visualize the remaining short range paths
+	this.AddShortRangeVectorOverlay();
+
+	let maxCell, minCell;
+	minCell = this.grid.GetCellRowCol(leftX, bottomZ);
+	maxCell = this.grid.GetCellRowCol(rightX, topZ);
+
+	for (i = minCell.row; i < maxCell.row; ++i) {
+		for (j = minCell.col; j < maxCell.col; ++j) {
+			overlayObj["nodes"].set(this.grid.GetCellIdC(i, j), 0);
+		}
+	}
+
+	this.visualization.addSummaryData("flowfield", "gridOverlay", turn, this.unit.id, overlayObj);
+}
+
+UnitMotionGroup.prototype.MovedPastWaypoint = function()
+{
+	this.flowfieldTriggerCount--;
+	this.shortPaths.shift();
+	this.AddShortRangeVectorOverlay();
+}
+
+UnitMotionGroup.prototype.AddShortRangeVectorOverlay = function()
+{
+		// a copy of the vectors is needed.
+		// they are going to be modified later and the visualization data should remain unchanged
+		let summaryData = { vectors: [] };
+		summaryData["startPoint"] = new Vector2D(this.unit.pos.x, this.unit.pos.y);
+		for (let vec of this.shortPaths) {
+			summaryData.vectors.push(new Vector2D(vec.x, vec.y));
+		}
+		
+		this.visualization.addSummaryData("shortrange", "vectorOverlay", this.currentTurn, this.unit.id, summaryData);
+}
 
 // Just make vectors from the list of navcells we have in the long path
 UnitMotionGroup.prototype.GetShortPaths = function() 

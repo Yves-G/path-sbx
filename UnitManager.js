@@ -8,6 +8,7 @@ function UnitManager(grid, visualization)
 
 	this.visualization.addVisualizationInfo("longrange");
 	this.visualization.addVisualizationInfo("shortrange");
+	this.visualization.addVisualizationInfo("flowfield");
 }
 
 UnitManager.prototype.SaveState = function(state)
