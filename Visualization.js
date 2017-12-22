@@ -54,35 +54,51 @@ Visualization.prototype.addDetailedData = function(turn, step, data)
 }
 
 // use objId=0 when only one object per name is used
-Visualization.prototype.drawSummary = function(turn, names, objIds)
+Visualization.prototype.drawSummary = function(turn, names, objIds, onlyCurrentTurn)
 {
-	if (!this.elements[turn])
-		return;
-
 	for (name of names) {
-		if (!this.elements[turn][name]) {
-			// it's valid to call this function with one or more names that don't exist in this turn
-			continue;
-		}
+		let vis = this.getVis(turn, name, onlyCurrentTurn);
 		
+		if (!vis)
+			continue;
+
 		// validate valid visualization modes
-		if (["gridOverlay", "vectorOverlay"].indexOf(this.elements[turn][name].summaryVisualizationMode) == -1) {
-			alert("Unknown visualization mode: " + this.elements[turn][name][summaryVisualizationMode] + "!");
+		if (["gridOverlay", "vectorOverlay"].indexOf(vis.summaryVisualizationMode) == -1) {
+			alert("Unknown visualization mode: " + vis[summaryVisualizationMode] + "!");
 			continue;
 		}
 
 		for (objId of objIds) {
 		
-			if (this.elements[turn][name].summaryVisualizationMode == "gridOverlay") {
-				this.drawGridOverlay(this.elements[turn][name].summaryData[objId]);
+			if (vis.summaryVisualizationMode == "gridOverlay") {
+				this.drawGridOverlay(vis.summaryData[objId]);
 				continue;
 			}
-			if (this.elements[turn][name].summaryVisualizationMode == "vectorOverlay") {
-				this.drawVectorOverlay(this.elements[turn][name].summaryData[objId]);
+			if (vis.summaryVisualizationMode == "vectorOverlay") {
+				this.drawVectorOverlay(vis.summaryData[objId]);
 				continue;
 			}
 		}
 	}
+}
+
+Visualization.prototype.getVis = function(currentTurn, name, onlyCurrentTurn) {
+
+	if (this.elements.length == 0)
+		return false;
+
+	if (this.elements[currentTurn] !== undefined && this.elements[currentTurn][name] !== undefined) {
+		return this.elements[currentTurn][name];
+	}
+
+	if (!onlyCurrentTurn) {
+		for (let i = currentTurn - 1; i >= 0; --i) {
+			if (this.elements[i] !== undefined && this.elements[i][name] !== undefined) {
+				return this.elements[i][name];
+			}
+		}
+	}
+	return false;
 }
 
 Visualization.prototype.drawDetailed = function(turn, step, names)

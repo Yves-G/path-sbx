@@ -71,8 +71,9 @@
 			<input id="stepRightButton" type="button" value=">" onClick="stepRightButton_onClick()"></input><br/>
 			<div id="stepLabel">0</div>
 		</div>
-
 		<div id="visualizationConfigDiv">
+			<input id="cbxOnlyCurrentTurnVisualization" type="checkbox"></input>
+			<label for="cbxOnlyCurrentTurnVisualization">Show only current turn visualization</label>
 			<div id="visualizationList"></div>
 		</div>
 		
@@ -359,7 +360,8 @@
 			}
 		}
 
-		visualization.drawSummary(turnTextElem.value,enabledVis, [unitCreator.selectedUnit.id]);
+		let onlyCurrentTurn = document.getElementById("cbxOnlyCurrentTurnVisualization").checked;
+		visualization.drawSummary(turnTextElem.value, enabledVis, [unitCreator.selectedUnit.id], onlyCurrentTurn);
 
 		for (unit of unitManager.units) {
 			drawingArea.DrawUnit(unit);
