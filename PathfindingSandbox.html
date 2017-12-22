@@ -393,6 +393,7 @@
 			checkbox.value = vis;
 			checkbox.id = "cbxVis" + vis;
 			checkbox.setAttribute("onchange", "draw()");
+			checkbox.setAttribute("checked", "checked");
 
 			let label = document.createElement('label')
 			label.htmlFor = "cbxVis" + vis;
