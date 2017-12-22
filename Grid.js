@@ -59,13 +59,15 @@ Grid.prototype.GetCellIdC = function(row, col)
 
 Grid.prototype.GetCellRowCol = function(posX, posZ)
 {
-	if (posX >= this.width || posZ >= this.height) {
-		alert("Passed a posX or posZ to GetCellIdP which is not inside the coordinate system's boundaries");
-		return 0;
-	}
 	let ret = {};
+
 	ret.col = Math.floor(this.cols * posX / this.width);
 	ret.row = Math.floor(this.rows * posZ / this.height);
+
+	// clamp
+	ret.col = Math.min(Math.max(ret.col, 0), this.cols);
+	ret.row = Math.min(Math.max(ret.row, 0), this.rows);
+
 	return ret;
 }
 
