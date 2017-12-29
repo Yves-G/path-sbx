@@ -4,7 +4,7 @@ function UnitMotionGroup(grid, visualization, unit)
 	this.gridAStar = new GridAStar(this.grid);
 	this.visualization = visualization;
 	this.unit = unit;
-	this.longPath = false;
+	this.longPath = [];
 	// a queue of points with waypoint positions
 	this.shortPaths = [];
 
@@ -39,7 +39,7 @@ UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 	if (this.unit.GetPathGoal().length() == 0 || this.HasReachedGoal())
 		return;
 
-	if (!this.longPath && this.shortPaths.length == 0) {
+	if (this.shortPaths.length == 0) {
 		let start = this.grid.GetCellIdP(this.unit.pos.x, this.unit.pos.y);
 		let goal = this.GetPathGoalNavcell();
 		let ret = {};
@@ -87,7 +87,6 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	let corridorWidth = 10;
 	let currLength = 0;
 	let currVec = Vector2D.clone(this.unit.pos);
-
 	let leftX = currVec.x;
 	let rightX = currVec.x;
 	let bottomZ = currVec.y;
@@ -105,36 +104,103 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 		ix++;
 	} while (currLength < maxLength && ix < this.shortPaths.length)
 
-	if (this.shortPaths.length == ix)
-		this.flowfieldTriggerCount = -1; // -1 indicates the the current flowfield covers the rest of the path
-	else
-		this.flowfieldTriggerCount = ix - 1;
-
 	leftX -= corridorWidth / 2
 	rightX +=  corridorWidth / 2
 	bottomZ -=  corridorWidth / 2
 	topZ += corridorWidth / 2
 
-	// Visualization
-	let overlayObj = {};
-	overlayObj["displayName"] = "Flowfield overlay";
-	overlayObj["nodeTypeNames"] = [ "Flowfield boundary"];
-	overlayObj["nodes"] = new Map();
-
-	// also visualize the remaining short range paths
-	this.AddShortRangeVectorOverlay();
-
 	let maxCell, minCell;
 	minCell = this.grid.GetCellRowColP(leftX, bottomZ);
 	maxCell = this.grid.GetCellRowColP(rightX, topZ);
 
-	for (i = minCell.row; i < maxCell.row; ++i) {
-		for (j = minCell.col; j < maxCell.col; ++j) {
-			overlayObj["nodes"].set(this.grid.GetCellIdC(i, j), 0);
+	if (this.shortPaths.length == ix)
+		this.flowfieldTriggerCount = -1; // -1 indicates the the current flowfield covers the rest of the path
+	else
+		this.flowfieldTriggerCount = ix - 1;
+
+	// goal cell calculation
+	let lastVec = this.shortPaths[ix];
+	let flowfieldCols = maxCell.col + 1 - minCell.col; // + 1 because maxCell is included
+	let flowfieldRows = maxCell.row + 1 - minCell.row;
+	let flowFieldCoordSpace = new CoordSpace(flowfieldCols, flowfieldRows);
+	let ffGrid = new Grid(flowFieldCoordSpace);
+
+	let gridRowCols = this.grid.GetCellRowColP(currVec.x, currVec.y);
+	let wp = ffGrid.GetCellIdC(gridRowCols.row - minCell.row, gridRowCols.col - minCell.col);
+
+	let wpD = []; // waypoint distance
+	wpD[wp] = 0;
+
+	// copy passability for flowfield grid
+	for (let i = 0; i < flowfieldRows; ++i) {
+		for (let j = 0; j < flowfieldCols; ++j) {
+			let fullGridIx = (minCell.row + i) * this.grid.cols + minCell.col + j;
+			ffGrid.SetCell(j, i, this.grid.grid[fullGridIx]);
 		}
 	}
 
+	this.WpDistFlowField(ffGrid, wp, wpD);
+
+	// Visualization of flowfield step 1:
+
+	let overlayObj = {};
+	overlayObj["displayName"] = "Flowfield overlay";
+	overlayObj["nodeTypeNames"] = [ "Flowfield boundary", "Impassable"];
+	overlayObj["nodes"] = new Map();
+	overlayObj["nodeTexts"] = new Map();
+
+	// also visualize the remaining short range paths
+	this.AddShortRangeVectorOverlay();
+
+	for (let i = minCell.row; i < maxCell.row; ++i) {
+		for (let j = minCell.col; j < maxCell.col; ++j) {
+			let i1 = i - minCell.row;
+			let j1 = j - minCell.col;
+			let cell = this.grid.GetCellIdC(i, j);
+			let cell1 = ffGrid.GetCellIdC(i1, j1);
+			let isPassable = ffGrid.IsPassable(cell1)
+			overlayObj["nodes"].set(cell, isPassable ? 0 : 1);
+			if (isPassable) // don't add the text for impassable cells because it would print "NaN".
+				overlayObj["nodeTexts"].set(cell, Math.round(wpD[ffGrid.GetCellIdC(i1, j1)]));
+		}
+	}
+
+	// Visualize the waypoint
+	let ffRowCol = ffGrid.GetCellRowColC(wp);
+	let wpfullGrid = this.grid.GetCellIdC(minCell.row + ffRowCol.row, minCell.col + ffRowCol.col);
+	overlayObj["nodeTexts"].set(wpfullGrid, "w");
+	overlayObj["nodes"].set(wpfullGrid, 2);
+
 	this.visualization.addSummaryData("flowfield", "gridOverlay", turn, this.unit.id, overlayObj);
+}
+
+UnitMotionGroup.prototype.WpDistFlowField = function(grid, start, wpD)
+{
+	let openNodes = [];
+	let closedSet = new Set();
+	closedSet.add(start);
+	for (let cell of grid.GetNeighbors(start)) { openNodes.push(cell.ix); };
+
+	while (openNodes.length > 0) {
+
+		let current = openNodes.shift();
+		closedSet.add(current);
+
+		let neighbors = grid.GetNeighbors(current);
+		for (let neighbor of neighbors) {
+			if (neighbor.ix in wpD) {
+				if (!(current in wpD)) {
+					wpD[current] = wpD[neighbor.ix] + neighbor.dist;
+				} else {
+					wpD[current] = Math.min(wpD[current], wpD[neighbor.ix] + neighbor.dist);
+				}
+			} else {
+				if (openNodes.indexOf(neighbor.ix) === -1 && !closedSet.has(neighbor.ix)) {
+					openNodes.push(neighbor.ix);
+				}
+			}
+		}
+	}
 }
 
 UnitMotionGroup.prototype.MovedPastWaypoint = function()
@@ -213,6 +279,5 @@ UnitMotionGroup.prototype.GetShortPaths = function()
 		prevDir = dir;
  
 	}
-	this.longPath = false;
 	return ret;
 }

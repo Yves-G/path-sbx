@@ -131,6 +131,19 @@ Visualization.prototype.drawGridOverlay = function(overlay)
 			cellHeight - 2 * borderPixel 	// height
 		);
 	}
+
+	if (overlay.nodeTexts === undefined)
+		return;
+
+	for ([nodeId, text] of overlay.nodeTexts) {
+
+		this.ctx.fillStyle = "black";
+		this.ctx.font = "8px Arial";
+		// adjust to different coordinate system. Substract 0.5 to roughly get the text centered in the cell.
+		let iTrans = this.coordSpace.maxHeight - Math.floor(nodeId / this.coordSpace.maxWidth) - 0.5;
+		let j = nodeId % this.coordSpace.maxWidth;
+		this.ctx.fillText(text, j * cellWidth + borderPixel, iTrans * cellHeight + borderPixel);
+	}
 }
 
 Visualization.prototype.drawVectorOverlay = function(overlay)
