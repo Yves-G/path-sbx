@@ -70,12 +70,6 @@ Grid.prototype.GetCellRowCol = function(posX, posZ)
 	return ret;
 }
 
-Grid.prototype.IsPassable = function(col, row)
-{
-	let ix = row * this.cols + col;
-	return this.grid[ix] != 1;
-}
-
 Grid.prototype.IsPassable = function(ix)
 {
 	return this.grid[ix] != 1;
