@@ -56,7 +56,7 @@ Grid.prototype.GetCellIdC = function(row, col)
 	return row * this.cols + col;
 }
 
-Grid.prototype.GetCellRowCol = function(posX, posZ)
+Grid.prototype.GetCellRowColP = function(posX, posZ)
 {
 	let ret = {};
 
@@ -67,6 +67,14 @@ Grid.prototype.GetCellRowCol = function(posX, posZ)
 	ret.col = Math.min(Math.max(ret.col, 0), this.cols);
 	ret.row = Math.min(Math.max(ret.row, 0), this.rows);
 
+	return ret;
+}
+
+Grid.prototype.GetCellRowColC = function(cell)
+{
+	let ret = {};
+	ret.col = cell % this.cols;
+	ret.row = Math.floor(cell / this.cols);
 	return ret;
 }
 

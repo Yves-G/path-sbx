@@ -125,8 +125,8 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	this.AddShortRangeVectorOverlay();
 
 	let maxCell, minCell;
-	minCell = this.grid.GetCellRowCol(leftX, bottomZ);
-	maxCell = this.grid.GetCellRowCol(rightX, topZ);
+	minCell = this.grid.GetCellRowColP(leftX, bottomZ);
+	maxCell = this.grid.GetCellRowColP(rightX, topZ);
 
 	for (i = minCell.row; i < maxCell.row; ++i) {
 		for (j = minCell.col; j < maxCell.col; ++j) {
