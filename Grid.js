@@ -1,4 +1,4 @@
-function Grid(coordSpace, visualization) {
+function Grid(coordSpace) {
 
 	// For now, hardcode the grid resolution to 1
 	this.width = coordSpace.maxWidth;
@@ -9,7 +9,6 @@ function Grid(coordSpace, visualization) {
 	this.cellHeight = 1;
 	
 	this.grid = new Uint8Array(this.cols * this.rows);
-	this.visualization = visualization;
 }
 
 Grid.prototype.SaveState = function(state) {
