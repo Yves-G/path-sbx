@@ -81,6 +81,56 @@ Grid.prototype.IsPassable = function(ix)
 	return this.grid[ix] != 1;
 }
 
+Grid.prototype.GetNeighbors = function(current)
+{
+	let neighbors = new Set();
+
+	let cols = this.cols;
+	let rows = this.rows;
+
+	// down left
+	let neighborIx = current - cols - 1;
+	if (neighborIx >= 0 && current % cols != 0)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+	// down
+	neighborIx = current - cols;
+	if (neighborIx >= 0 && current % cols != cols - 1)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": 1 });
+	// down right
+	neighborIx = current - cols + 1;
+	if (neighborIx >= 0 && current % cols != cols - 1)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+	// left
+	neighborIx = current - 1;
+	if (current % cols != 0)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": 1 });
+	// right
+	neighborIx = current + 1;
+	if (current % cols != cols - 1)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": 1 });
+	// up left
+	neighborIx = current + cols - 1;
+	if (neighborIx < cols * rows && current % cols != 0)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+	// up
+	neighborIx = current + cols;
+	if (neighborIx < cols * rows)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": 1 });
+	// up right
+	neighborIx = current + cols + 1;
+	if (neighborIx < cols * rows && current % cols != cols - 1)
+		if (this.IsPassable(neighborIx))
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+
+	return neighbors;
+}
 
 Grid.prototype.InvertCell = function(col, row)
 {

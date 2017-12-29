@@ -103,48 +103,7 @@ GridAStar.prototype.aStar = function(start, goal, ret)
 		openSet.delete(current);
 		closedSet.add(current)
 		
-		// Get all neighbors
-		neighbors.clear();
-		// down left
-		let neighborIx = current - cols - 1;
-		if (neighborIx >= 0 && current % cols != 0)
-			if (grid[neighborIx] != 1) // not obstructed
-				neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
-		// down
-		neighborIx = current - cols;
-		if (neighborIx >= 0 && current % cols != cols - 1) 
-			if (grid[neighborIx] != 1) // not obstructed
-				neighbors.add({ "ix": neighborIx, "dist": 1 });
-		// down right
-		neighborIx = current - cols + 1;
-		if (neighborIx >= 0 && current % cols != cols - 1)
-			if (grid[neighborIx] != 1) // not obstructed
-				neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
-		// left
-		neighborIx = current - 1;
-		if (current % cols != 0)
-			if (this.grid.IsPassable(neighborIx))
-				neighbors.add({ "ix": neighborIx, "dist": 1 });
-		// right
-		neighborIx = current + 1;
-		if (current % cols != cols - 1)
-			if (this.grid.IsPassable(neighborIx))
-				neighbors.add({ "ix": neighborIx, "dist": 1 });
-		// up left
-		neighborIx = current + cols - 1;
-		if (neighborIx < cols * rows && current % cols != 0)
-			if (this.grid.IsPassable(neighborIx))
-				neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
-		// up
-		neighborIx = current + cols;
-		if (neighborIx < cols * rows)
-			if (this.grid.IsPassable(neighborIx))
-				neighbors.add({ "ix": neighborIx, "dist": 1 });
-		// up right
-		neighborIx = current + cols + 1;
-		if (neighborIx < cols * rows && current % cols != cols - 1)
-			if (this.grid.IsPassable(neighborIx))
-				neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+		let neighbors = this.grid.GetNeighbors(current);
 			
 		for (let neighbor of neighbors) {
 			if (closedSet.has(neighbor.ix))
