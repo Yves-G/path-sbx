@@ -83,6 +83,7 @@
 	let coordSpace = new CoordSpace(50, 50);
 	let visualization = new Visualization(drawingCanvas, coordSpace);
 	let grid = new Grid(coordSpace);
+	grid.CreateImpassableBorders();
 	let drawingArea = new DrawingArea(drawingCanvas, grid, coordSpace);
 	let pathfinderSelector = new PathfinderSelector();
 	let simulation = new Simulation([grid]);

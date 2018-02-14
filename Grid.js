@@ -31,6 +31,21 @@ Grid.prototype.LoadState = function(state) {
 	this.grid = state.grid.slice();
 }
 
+// Make all cells on the sides of the grid impassable. This is useful for preventing units from leaving
+// the map without having to write additional code for that task.
+Grid.prototype.CreateImpassableBorders = function()
+{
+	for (let i = 0; i < this.rows; ++i) {
+		this.grid[i * this.cols] = 1;
+		this.grid[i * this.cols + this.cols - 1] = 1;
+	}
+
+	for (let i = 1; i < this.cols - 1; ++i) {
+		this.grid[i] = 1;
+		this.grid[(this.rows -1) * this.cols + i] = 1;
+	}
+}
+
 Grid.prototype.SetCell = function(col, row, val)
 {
 	this.grid[row * this.cols + col] = val;
