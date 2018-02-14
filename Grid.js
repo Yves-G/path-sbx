@@ -1,4 +1,4 @@
-function Grid(coordSpace) {
+function Grid(coordSpace, type) {
 
 	// For now, hardcode the grid resolution to 1
 	this.width = coordSpace.maxWidth;
@@ -10,7 +10,19 @@ function Grid(coordSpace) {
 	this.colsOffset = coordSpace.offsetLeft
 	this.rowsOffset = coordSpace.offsetBottom
 	
-	this.grid = new Uint8Array(this.cols * this.rows);
+	if (type === undefined)
+		var type = "Uint8";
+
+	switch (type) {
+		case "Uint8":
+			this.grid = new Uint8Array(this.cols * this.rows);
+			break;
+		case "Float32":
+			this.grid = new Float32Array(this.cols * this.rows);
+			break;
+		default:
+			alert("Type: " + type + " is unknown!");
+	}
 }
 
 Grid.prototype.SaveState = function(state) {
