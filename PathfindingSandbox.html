@@ -80,7 +80,7 @@
 	</div>
 	<script type="text/javascript">
 	let drawingCanvas = document.getElementById("drawingCanvas");
-	let coordSpace = new CoordSpace(50, 50);
+	let coordSpace = new CoordSpace(50, 50, 0, 0);
 	let visualization = new Visualization(drawingCanvas, coordSpace);
 	let grid = new Grid(coordSpace);
 	grid.CreateImpassableBorders();

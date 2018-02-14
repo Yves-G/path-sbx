@@ -7,6 +7,8 @@ function Grid(coordSpace) {
 	this.rows = coordSpace.maxHeight;
 	this.cellWidth = 1;
 	this.cellHeight = 1;
+	this.colsOffset = coordSpace.offsetLeft
+	this.rowsOffset = coordSpace.offsetBottom
 	
 	this.grid = new Uint8Array(this.cols * this.rows);
 }
@@ -49,6 +51,20 @@ Grid.prototype.CreateImpassableBorders = function()
 Grid.prototype.SetCell = function(col, row, val)
 {
 	this.grid[row * this.cols + col] = val;
+}
+
+// Sometimes you have smaller grids representing regions of the full grid and you have to convert
+// cell IDs between these two grids in order to access the same cell in both grids. You might even
+// have two sub regions and need to convert cell IDs between these.
+// This function does the conversion based on the "colsOffset" and "rowsOffset" values of the two grids.
+Grid.prototype.CellIdFromOtherGrid = function(cellId, otherGrid)
+{
+	let ret;
+	let otherRowCol = otherGrid.GetCellRowColC(cellId);
+	let globRowCol = {};
+	globRowCol.col = otherGrid.colsOffset + otherRowCol.col;
+	globRowCol.row = otherGrid.rowsOffset + otherRowCol.row;
+	return this.GetCellIdC(globRowCol.row - this.rowsOffset, globRowCol.col - this.colsOffset);
 }
 
 Grid.prototype.GetCellIdP = function(posX, posZ)

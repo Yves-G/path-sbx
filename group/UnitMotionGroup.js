@@ -120,9 +120,9 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 
 	// goal cell calculation
 	let lastVec = this.shortPaths[ix];
-	let flowfieldCols = maxCell.col + 1 - minCell.col; // + 1 because maxCell is included
-	let flowfieldRows = maxCell.row + 1 - minCell.row;
-	let flowFieldCoordSpace = new CoordSpace(flowfieldCols, flowfieldRows);
+	let flowfieldCols = maxCell.col - minCell.col;
+	let flowfieldRows = maxCell.row - minCell.row;
+	let flowFieldCoordSpace = new CoordSpace(flowfieldCols, flowfieldRows, minCell.col, minCell.row);
 	let ffGrid = new Grid(flowFieldCoordSpace);
 
 	let gridRowCols = this.grid.GetCellRowColP(currVec.x, currVec.y);
