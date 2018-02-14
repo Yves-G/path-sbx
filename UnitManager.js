@@ -1,10 +1,11 @@
-function UnitManager(grid, visualization)
+function UnitManager(grid, visualization, type)
 {
 	this.grid = grid;
 	this.visualization = visualization;
 	this.units = [];
 	this.unitMotionObjects = [];
 	this.nextUnitId = 1;
+	this.type = type;
 
 	this.visualization.addVisualizationInfo("longrange");
 	this.visualization.addVisualizationInfo("shortrange");
@@ -21,19 +22,27 @@ UnitManager.prototype.SaveState = function(state)
 		state.units.push(unitState)
 	}
 	state.nextUnitId = this.nextUnitId;
+	state.type = this.type;
 }
 
 UnitManager.prototype.LoadState = function(state)
 {
 
 	this.units = [];
-
+	this.type = state.type;
+	this.nextUnitId = state.nextUnitId;
 	for (let unitState of state.units) {
-		let unit = new Unit(this.grid, this.visualization);
+		let unit = {};
+		if (this.type == "unit") {
+			unit = new Unit();
+		} else if (this.type == "group") {
+			unit = new Group();
+		} else {
+			alert("unknown type in UnitManager.prototype.LoadState!");
+		}
 		unit.LoadState(unitState);
 		this.units.push(unit);
 	}
-	this.nextUnitId = state.nextUnitId;
 }
 
 UnitManager.prototype.SimInit = function(unitMotionConstr)
@@ -50,8 +59,21 @@ UnitManager.prototype.SimDestroy = function()
 
 UnitManager.prototype.AddUnit = function(posX, posZ, orientation, obstructionSize)
 {
-	let unit = new Unit(this.grid, this.visualization, this.unitMotionContr)
-	unit.Init(this.nextUnitId++, posX, posZ, orientation, obstructionSize);
+	if (this.type == "unit") {
+		var unit = new Unit();
+		unit.Init(this.nextUnitId++, posX, posZ, orientation, obstructionSize);
+	} else if (this.type == "group") {
+		// for now we just add 24 units hardcoded
+		let memberUnits = [];
+		for (let i = 0; i < 24; ++i) {
+			memberUnits.push(new Unit());
+			memberUnits[memberUnits.length - 1].Init(this.nextUnitId++, posX, posZ, orientation, obstructionSize);
+		}
+		var unit = new Group();
+		unit.Init(this.nextUnitId++, posX, posZ, orientation, "FormationBox", memberUnits);
+	} else
+		alert("AddUnit: unknown unit type");
+
 	this.units.push(unit);
 	return unit;
 }

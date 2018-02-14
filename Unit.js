@@ -1,4 +1,4 @@
-function Unit(grid, visualization)
+function Unit()
 {
 	this.id = -1;
 	this.pos = new Vector2D();
@@ -8,6 +8,7 @@ function Unit(grid, visualization)
 	this.selected = false
 	this.color = "#0000FF";
 	this.pathGoal = new Vector2D();
+	this.unitType = "unit";
 }
 
 Unit.prototype.Init = function(id, posX, posZ, orientation, obstructionSize)

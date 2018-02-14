@@ -9,6 +9,7 @@
 	<script src="CoordinateSpace.js"></script>
 	<script src="DrawingArea.js"></script>
 	<script src="Grid.js"></script>
+	<script src="Group.js"></script>
 	<script src="PathfinderSelector.js"></script>
 	<script src="Pencil.js"></script>
 	<script src="PriorityQueue.js"></script>
@@ -23,6 +24,8 @@
 	<script src="basic_singleunit/UnitMotion.js"></script>
 	<script src="basic_singleunit/GridAStar.js"></script>
 
+	<script src="formations/FormationDefinitions.js"></script>
+
 	<script src="group/UnitMotionGroup.js"></script>
 </head>
 <body>
@@ -34,6 +37,7 @@
 		<select id="pencilSelect" onChange="pencilSelect_onChange()">
 			<option value="gridObstruction">Grid obstruction</option>
 			<option value="unit">Unit</option>
+			<option value="group">Group</option>
 			<!--<option value="Invalid">Invalid</option>-->
 		</select>
 		<input id="pencilHelpButton" value="Help" type="button" onClick="pencilHelpButton_onClick()"></input>
@@ -91,7 +95,8 @@
 	// pathfinder specific objects
 
 	// 1. basic_singleunit
-	let unitManager = new UnitManager(grid, visualization);
+	let unitManager = new UnitManager(grid, visualization, "unit");
+	let groupManager = new UnitManager(grid, visualization, "group");
 
 	let simStartState = {};
 	let simTurnDurationText = document.getElementById("simTurnDurationText");
@@ -115,10 +120,12 @@
 	populatePathfinderSelection();
 	simulation.RegisterSimObject("grid", grid);
 	simulation.RegisterSimObject("unitManager", unitManager);
+	simulation.RegisterSimObject("groupManager", groupManager);
 	
 	let ret = {};
 
 	let unitCreator = new UnitCreator(drawingCanvas, coordSpace, unitManager);
+	let groupCreator = new UnitCreator(drawingCanvas, coordSpace, groupManager);
 
 	let timer = setInterval( function(){ onTick() }, simTurnDuration);
 
@@ -136,6 +143,16 @@
 		'<b>Hold M while unit(s) selected and click:</b> move order for unit(s) <br /\>'
 
 	pencil.AddType("unit", usageDesc, unitCreator, unitCreator.OnClick, unitCreator.OnMouseDown, unitCreator.OnMouseUp, false /*onMouseMove*/, unitCreator.OnMouseOut, unitCreator.OnKeyDown, unitCreator.OnKeyUp);
+
+	usageDesc = 'NOTE: Currenly there\'s no check to ensure that all units in the group are on passable terrain. <br /\>' +
+		'<br /\>' +
+		'<b>Click on free space:</b> place group with default (0&deg;) orientation (along x-axis) <br /\>' +
+		'<b>Click and drag on free space:</b> place group with specific orientation <br /\>' +
+		'<b>Selection</b> not implemented yet<br /\>' +
+		'<b>Deleting</b> not implemented yet<br /\>' +
+		'<b>Hold M while group selected and click:</b> move order for group <br /\>'
+
+	pencil.AddType("group", usageDesc, groupCreator, groupCreator.OnClick, groupCreator.OnMouseDown, groupCreator.OnMouseUp, false /*onMouseMove*/, groupCreator.OnMouseOut, groupCreator.OnKeyDown, groupCreator.OnKeyUp);
 
 	pencilSelect_onChange();
 
@@ -218,6 +235,7 @@
 		simRunning = true;
 		setEditingEnabled(false);
 		unitManager.SimInit(unitMotionConstr);
+		groupManager.SimInit(unitMotionConstr);
 		setSimStatus();
 	}
 	function onSimPause() {
@@ -238,6 +256,7 @@
 		simRunning = false;
 		setEditingEnabled(true);
 		unitManager.SimDestroy();
+		groupManager.SimDestroy();
 		setSimStatus();
 		draw();
 	}
@@ -362,10 +381,19 @@
 		}
 
 		let onlyCurrentTurn = document.getElementById("cbxOnlyCurrentTurnVisualization").checked;
-		visualization.drawSummary(turnTextElem.value, enabledVis, [unitCreator.selectedUnit.id], onlyCurrentTurn);
+		let objIDs = [];
+		if (unitCreator.selectedUnit.id)
+			objIDs.push(unitCreator.selectedUnit.id);
+		if (groupCreator.selectedUnit.id)
+			objIDs.push(groupCreator.selectedUnit.id);
+		visualization.drawSummary(turnTextElem.value, enabledVis, objIDs, onlyCurrentTurn);
 
-		for (unit of unitManager.units) {
+		for (let unit of unitManager.units) {
 			drawingArea.DrawUnit(unit);
+		}
+
+		for (let group of groupManager.units) {
+			drawingArea.DrawGroup(group);
 		}
 	}
 	function populatePathfinderSelection() {

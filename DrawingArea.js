@@ -122,6 +122,85 @@ DrawingArea.prototype.DrawUnit = function(unit) {
 	this.ctx.closePath();
 }
 
+DrawingArea.prototype.DrawGroup = function(group) {
+
+	let centerX = 0;
+	let centerY = 0;
+	var radius = 0;
+
+	// draw path goal (draw that first so that the group is drawn on top of the goal indicator)
+	let pathGoal = group.GetPathGoal();
+	if (pathGoal.length() != 0 && group.selected) {
+
+		// It's a bit confusing because the pathGoal vector uses x and y properties to store the world space x and z coordinates
+		centerX = this.canvas.width * pathGoal.x / this.coordSpace.maxWidth;
+		centerY = this.canvas.height * (this.coordSpace.maxHeight - pathGoal.y) / this.coordSpace.maxHeight;
+		radius = 9;
+		this.ctx.beginPath();
+		this.ctx.moveTo(centerX, centerY);
+		this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+		this.ctx.fillStyle = "#00dd00";
+		this.ctx.fill();
+		this.ctx.closePath();
+
+		radius = 6;
+		this.ctx.beginPath();
+		this.ctx.moveTo(centerX, centerY);
+		this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+		this.ctx.fillStyle = "#000000";
+		this.ctx.fill();
+		this.ctx.closePath();
+
+		radius = 3;
+		this.ctx.beginPath();
+		this.ctx.moveTo(centerX, centerY);
+		this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+		this.ctx.fillStyle = "#00dd00";
+		this.ctx.fill();
+		this.ctx.closePath();
+	}
+
+	for (let unit of group.units) {
+		this.DrawUnit(unit);
+	}
+
+	// draw a point for each unit spot in the group
+
+	unitSpots = group.GetUnitSpots();
+	for (spot of unitSpots) {
+		let pos = Vector2D.clone(spot);
+		pos.add(group.movePos);
+		radius = 2;
+		// transform from map coordiante system to canvas coordinate system
+		centerX = this.canvas.width * pos.x / this.coordSpace.maxWidth;
+		centerY = this.canvas.height * (this.coordSpace.maxHeight - pos.y) / this.coordSpace.maxHeight;
+
+		this.ctx.beginPath();
+		this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+		this.ctx.fillStyle = group.color;
+		this.ctx.fill();
+		this.ctx.closePath();
+	}
+
+	// draw a line showing the direction of the group
+	centerX = this.canvas.width * group.movePos.x / this.coordSpace.maxWidth; 
+	centerY = this.canvas.height * (this.coordSpace.maxHeight - group.movePos.y) / this.coordSpace.maxHeight;
+	this.ctx.beginPath();
+	this.ctx.moveTo(centerX, centerY);
+
+	// * -1 because of the different coordinate system
+	radius = 20;
+	let toX = centerX - Math.cos(group.orientation) * radius * -1;
+	let toY = centerY + Math.sin(group.orientation + Math.PI) * radius * -1;
+
+	this.ctx.lineTo(toX, toY);
+	this.ctx.lineWidth = 2;
+	this.ctx.strokeStyle = group.color;
+	this.ctx.stroke();
+	this.ctx.closePath();
+}
+
+
 // Events
 DrawingArea.prototype.onMouseDown = function(event)
 {
