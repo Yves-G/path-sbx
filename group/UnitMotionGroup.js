@@ -10,6 +10,7 @@ function UnitMotionGroup(grid, visualization, unit)
 
 	// number of path waypoints remaining until a new flowfield needs to be built
 	this.flowfieldTriggerCount = 0;
+	this.wpD = [];
 
 	this.currentTurn;
 }
@@ -125,21 +126,20 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	let flowFieldCoordSpace = new CoordSpace(flowfieldCols, flowfieldRows, minCell.col, minCell.row);
 	let ffGrid = new Grid(flowFieldCoordSpace);
 
-	let gridRowCols = this.grid.GetCellRowColP(currVec.x, currVec.y);
-	let wp = ffGrid.GetCellIdC(gridRowCols.row - minCell.row, gridRowCols.col - minCell.col);
+	let wp = ffGrid.CellIdFromOtherGrid(this.grid.GetCellIdP(currVec.x, currVec.y), this.grid);
 
-	let wpD = []; // waypoint distance
-	wpD[wp] = 0;
+	this.wpD = new Grid(flowFieldCoordSpace, "Float32"); // waypoint distance
+	this.wpD.grid[wp] = 0;
 
 	// copy passability for flowfield grid
 	for (let i = 0; i < flowfieldRows; ++i) {
 		for (let j = 0; j < flowfieldCols; ++j) {
-			let fullGridIx = (minCell.row + i) * this.grid.cols + minCell.col + j;
+			let fullGridIx = this.grid.CellIdFromOtherGrid(ffGrid.GetCellIdC(i, j), ffGrid);
 			ffGrid.SetCell(j, i, this.grid.grid[fullGridIx]);
 		}
 	}
 
-	this.WpDistFlowField(ffGrid, wp, wpD);
+	this.WpDistFlowField(ffGrid, wp, this.wpD.grid);
 
 	// Visualization of flowfield step 1:
 
@@ -154,20 +154,17 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 
 	for (let i = minCell.row; i < maxCell.row; ++i) {
 		for (let j = minCell.col; j < maxCell.col; ++j) {
-			let i1 = i - minCell.row;
-			let j1 = j - minCell.col;
 			let cell = this.grid.GetCellIdC(i, j);
-			let cell1 = ffGrid.GetCellIdC(i1, j1);
-			let isPassable = ffGrid.IsPassable(cell1)
+			let isPassable = ffGrid.IsPassable(ffGrid.CellIdFromOtherGrid(cell, this.grid));
 			overlayObj["nodes"].set(cell, isPassable ? 0 : 1);
-			if (isPassable) // don't add the text for impassable cells because it would print "NaN".
-				overlayObj["nodeTexts"].set(cell, Math.round(wpD[ffGrid.GetCellIdC(i1, j1)]));
+			if (isPassable) { // don't add the text for impassable cells because it would print "NaN".
+				overlayObj["nodeTexts"].set(cell, Math.round(this.wpD.grid[ffGrid.CellIdFromOtherGrid(cell, this.grid)]));
+			}
 		}
 	}
 
 	// Visualize the waypoint
-	let ffRowCol = ffGrid.GetCellRowColC(wp);
-	let wpfullGrid = this.grid.GetCellIdC(minCell.row + ffRowCol.row, minCell.col + ffRowCol.col);
+	let wpfullGrid = this.grid.CellIdFromOtherGrid(wp, ffGrid);
 	overlayObj["nodeTexts"].set(wpfullGrid, "w");
 	overlayObj["nodes"].set(wpfullGrid, 2);
 
@@ -188,14 +185,14 @@ UnitMotionGroup.prototype.WpDistFlowField = function(grid, start, wpD)
 
 		let neighbors = grid.GetNeighbors(current);
 		for (let neighbor of neighbors) {
-			if (neighbor.ix in wpD) {
-				if (!(current in wpD)) {
+			if (closedSet.has(neighbor.ix)) {
+				if (wpD[current] == 0) {
 					wpD[current] = wpD[neighbor.ix] + neighbor.dist;
 				} else {
 					wpD[current] = Math.min(wpD[current], wpD[neighbor.ix] + neighbor.dist);
 				}
 			} else {
-				if (openNodes.indexOf(neighbor.ix) === -1 && !closedSet.has(neighbor.ix)) {
+				if (openNodes.indexOf(neighbor.ix) === -1) {
 					openNodes.push(neighbor.ix);
 				}
 			}
