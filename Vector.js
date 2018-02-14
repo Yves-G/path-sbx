@@ -177,3 +177,9 @@ Vector2D.sum = function(vectorList)
 	vectorList.forEach(function(v) {sum.add(v);});
 	return sum;
 };
+
+Vector2D.angle = function(a, b)
+{
+	let cosAngle = a.dot(b) / (a.length() * b.length());
+	return Math.acos(cosAngle);
+};
