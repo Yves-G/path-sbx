@@ -63,7 +63,7 @@ Visualization.prototype.drawSummary = function(turn, names, objIds, onlyCurrentT
 			continue;
 
 		// validate valid visualization modes
-		if (["gridOverlay", "vectorOverlay"].indexOf(vis.summaryVisualizationMode) == -1) {
+		if (["gridOverlay", "vectorOverlay", "positionOverlay"].indexOf(vis.summaryVisualizationMode) == -1) {
 			alert("Unknown visualization mode: " + vis[summaryVisualizationMode] + "!");
 			continue;
 		}
@@ -76,6 +76,10 @@ Visualization.prototype.drawSummary = function(turn, names, objIds, onlyCurrentT
 			}
 			if (vis.summaryVisualizationMode == "vectorOverlay") {
 				this.drawVectorOverlay(vis.summaryData[objId]);
+				continue;
+			}
+			if (vis.summaryVisualizationMode == "positionOverlay") {
+				this.drawPositionOverlay(vis.summaryData[objId]);
 				continue;
 			}
 		}
@@ -164,6 +168,27 @@ Visualization.prototype.drawVectorOverlay = function(overlay)
 			this.canvas.height / this.coordSpace.maxHeight * vec.y * -1);
 		pos.add(vecConv);
 		this.ctx.lineTo(pos.x, pos.y);
+		this.ctx.stroke();
+		this.ctx.closePath();
+	}
+}
+
+Visualization.prototype.drawPositionOverlay = function(overlay)
+{
+	this.ctx.strokeStyle = "#ff0000"; // red
+	this.ctx.lineWidth = 2;
+	let crossWidth = 12;
+
+	for (let i = 0; i < overlay.points.length; ++i) {
+		let pos = Vector2D.clone(overlay.points[i]);
+		// adjust to different coordinate system
+		pos.set(this.canvas.width / this.coordSpace.maxWidth * pos.x, this.canvas.height - (this.canvas.height / this.coordSpace.maxHeight * pos.y));
+
+		this.ctx.beginPath();
+		this.ctx.moveTo(pos.x - crossWidth / 2, pos.y);
+		this.ctx.lineTo(pos.x + crossWidth / 2, pos.y);
+		this.ctx.moveTo(pos.x, pos.y - crossWidth / 2);
+		this.ctx.lineTo(pos.x, pos.y + crossWidth / 2);
 		this.ctx.stroke();
 		this.ctx.closePath();
 	}

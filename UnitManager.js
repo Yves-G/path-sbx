@@ -10,6 +10,7 @@ function UnitManager(grid, visualization, type)
 	this.visualization.addVisualizationInfo("longrange");
 	this.visualization.addVisualizationInfo("shortrange");
 	this.visualization.addVisualizationInfo("flowfield");
+	this.visualization.addVisualizationInfo("positions");
 }
 
 UnitManager.prototype.SaveState = function(state)

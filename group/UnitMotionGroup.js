@@ -220,6 +220,16 @@ UnitMotionGroup.prototype.AddShortRangeVectorOverlay = function()
 		this.visualization.addSummaryData("shortrange", "vectorOverlay", this.currentTurn, this.unit.id, summaryData);
 }
 
+UnitMotionGroup.prototype.AddPositionOverlay = function(positions)
+{
+		let posCopy = [];
+		for (let pos of positions) { posCopy.push(pos); }
+
+		let summaryData = { "points": posCopy };
+
+		this.visualization.addSummaryData("positions", "positionOverlay", this.currentTurn, this.unit.id, summaryData);
+}
+
 // Just make vectors from the list of navcells we have in the long path
 UnitMotionGroup.prototype.GetShortPaths = function() 
 {
