@@ -133,23 +133,28 @@ Grid.prototype.GetNeighbors = function(current)
 	let cols = this.cols;
 	let rows = this.rows;
 
+	let neighborDown  = current - cols;
+	let neighborLeft  = current - 1;
+	let neighborUp    = current + cols;
+	let neighborRight = current + 1;
+
 	// down left
-	let neighborIx = current - cols - 1;
+	let neighborIx = neighborDown - 1;
 	if (neighborIx >= 0 && current % cols != 0)
-		if (this.IsPassable(neighborIx))
+		if (this.IsPassable(neighborIx) && this.IsPassable(neighborDown) && this.IsPassable(neighborLeft))
 			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
 	// down
-	neighborIx = current - cols;
+	neighborIx = neighborDown;
 	if (neighborIx >= 0)
 		if (this.IsPassable(neighborIx))
 			neighbors.add({ "ix": neighborIx, "dist": 1 });
 	// down right
-	neighborIx = current - cols + 1;
+	neighborIx = neighborDown + 1;
 	if (neighborIx >= 0 && current % cols != cols - 1)
-		if (this.IsPassable(neighborIx))
+		if (this.IsPassable(neighborIx) && this.IsPassable(neighborDown) && this.IsPassable(neighborRight))
 			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
 	// left
-	neighborIx = current - 1;
+	neighborIx = neighborLeft;
 	if (current % cols != 0)
 		if (this.IsPassable(neighborIx))
 			neighbors.add({ "ix": neighborIx, "dist": 1 });
@@ -159,19 +164,19 @@ Grid.prototype.GetNeighbors = function(current)
 		if (this.IsPassable(neighborIx))
 			neighbors.add({ "ix": neighborIx, "dist": 1 });
 	// up left
-	neighborIx = current + cols - 1;
+	neighborIx = neighborUp - 1;
 	if (neighborIx < cols * rows && current % cols != 0)
-		if (this.IsPassable(neighborIx))
+		if (this.IsPassable(neighborIx) && this.IsPassable(neighborUp) && this.IsPassable(neighborLeft))
 			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
 	// up
-	neighborIx = current + cols;
+	neighborIx = neighborUp;
 	if (neighborIx < cols * rows)
 		if (this.IsPassable(neighborIx))
 			neighbors.add({ "ix": neighborIx, "dist": 1 });
 	// up right
-	neighborIx = current + cols + 1;
+	neighborIx = neighborUp + 1;
 	if (neighborIx < cols * rows && current % cols != cols - 1)
-		if (this.IsPassable(neighborIx))
+		if (this.IsPassable(neighborIx) && this.IsPassable(neighborUp) && this.IsPassable(neighborRight))
 			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
 
 	return neighbors;
