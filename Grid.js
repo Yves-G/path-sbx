@@ -93,10 +93,16 @@ Grid.prototype.GetCellIdP = function(posX, posZ)
 Grid.prototype.GetCellIdC = function(row, col)
 {
 	if (row >= this.rows || row < 0 || col >= this.cols || col < 0) {
-		alert("Passed a row or col to GetCellIdC which is not inside the boundaries");
+		alert("Passed a row or col to GetCellIdC which is not inside the boundaries " + row + "/" + col + " vs " + this.rows + "/" + this.cols);
 		return 0;
 	}
 	return row * this.cols + col;
+}
+
+Grid.prototype.GetPositionC = function(cell)
+{
+	let rowCol = this.GetCellRowColC(cell);
+	return new Vector2D(rowCol.col * this.cellWidth + this.cellWidth * 0.5, rowCol.row * this.cellHeight + this.cellHeight * 0.5);
 }
 
 Grid.prototype.GetCellRowColP = function(posX, posZ)
