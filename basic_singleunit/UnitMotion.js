@@ -54,7 +54,7 @@ UnitMotionBasicSingle.prototype.OnTurn = function(turn, timePassed)
 			summaryData.vectors.push(new Vector2D(vec.x, vec.y));
 		}
 		
-		this.visualization.addSummaryData("shortrange", "vectorOverlay", turn, this.unit.id, summaryData);
+		this.visualization.addSummaryData("shortrange", "vectorSplineOverlay", turn, this.unit.id, summaryData);
 	}
 
 

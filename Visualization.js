@@ -63,7 +63,7 @@ Visualization.prototype.drawSummary = function(turn, names, objIds, onlyCurrentT
 			continue;
 
 		// validate valid visualization modes
-		if (["gridOverlay", "vectorOverlay", "positionOverlay"].indexOf(vis.summaryVisualizationMode) == -1) {
+		if (["gridOverlay", "vectorSplineOverlay", "vectorOverlay", "positionOverlay"].indexOf(vis.summaryVisualizationMode) == -1) {
 			alert("Unknown visualization mode: " + vis[summaryVisualizationMode] + "!");
 			continue;
 		}
@@ -72,6 +72,10 @@ Visualization.prototype.drawSummary = function(turn, names, objIds, onlyCurrentT
 		
 			if (vis.summaryVisualizationMode == "gridOverlay") {
 				this.drawGridOverlay(vis.summaryData[objId]);
+				continue;
+			}
+			if (vis.summaryVisualizationMode == "vectorSplineOverlay") {
+				this.drawVectorSplineOverlay(vis.summaryData[objId]);
 				continue;
 			}
 			if (vis.summaryVisualizationMode == "vectorOverlay") {
@@ -150,7 +154,7 @@ Visualization.prototype.drawGridOverlay = function(overlay)
 	}
 }
 
-Visualization.prototype.drawVectorOverlay = function(overlay)
+Visualization.prototype.drawVectorSplineOverlay = function(overlay)
 {
 	let pos = new Vector2D(overlay.startPoint.x, overlay.startPoint.y);
 	// adjust to different coordinate system
@@ -162,6 +166,27 @@ Visualization.prototype.drawVectorOverlay = function(overlay)
 
 	for (let vec of overlay.vectors) {
 		
+		this.ctx.beginPath();
+		this.ctx.moveTo(pos.x, pos.y);
+		vecConv = new Vector2D(this.canvas.width / this.coordSpace.maxWidth * vec.x,
+			this.canvas.height / this.coordSpace.maxHeight * vec.y * -1);
+		pos.add(vecConv);
+		this.ctx.lineTo(pos.x, pos.y);
+		this.ctx.stroke();
+		this.ctx.closePath();
+	}
+}
+
+Visualization.prototype.drawVectorOverlay = function(overlay)
+{
+	this.ctx.strokeStyle = "#ffd200"; // yellow
+	this.ctx.lineWidth = 4;
+
+	for (let i = 0; i < overlay.points.length; ++i) {
+		let pos = Vector2D.clone(overlay.points[i]);
+		// adjust to different coordinate system
+		pos.set(this.canvas.width / this.coordSpace.maxWidth * pos.x, this.canvas.height - (this.canvas.height / this.coordSpace.maxHeight * pos.y));
+		let vec = overlay.vectors[i];
 		this.ctx.beginPath();
 		this.ctx.moveTo(pos.x, pos.y);
 		vecConv = new Vector2D(this.canvas.width / this.coordSpace.maxWidth * vec.x,
