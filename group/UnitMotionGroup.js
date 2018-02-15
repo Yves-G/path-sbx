@@ -5,11 +5,13 @@ function UnitMotionGroup(grid, visualization, unit)
 	this.visualization = visualization;
 	this.unit = unit;
 	this.longPath = [];
-	// a queue of points with waypoint positions
+	// array of vectors starting from shortPathsStartPoint and leading from one waypoint to the next
 	this.shortPaths = [];
+	this.shortPathStartPoint = new Vector2D();
 
-	// number of path waypoints remaining until a new flowfield needs to be built
-	this.flowfieldTriggerCount = 0;
+	this.lastFFWPGoal = false;
+	this.lastFFWPTriggerDist = 5;
+	this.goalIsInFF = false;
 	this.wpD = [];
 
 	this.currentTurn;
@@ -54,57 +56,255 @@ UnitMotionGroup.prototype.OnTurn = function(turn, timePassed)
 			return;
 
 		this.AddShortRangeVectorOverlay();
-		this.flowfieldTriggerCount = 0;
 	}
 
-	while (timeLeft) {
-		if (this.flowfieldTriggerCount == 0) {
+	if (this.shortPaths.length != 0) {
+		this.UpdateGroupPos();
+
+		if (!this.goalIsInFF && (!this.lastFFWPGoal || Vector2D.sub(this.lastFFWPGoal, this.unit.GetMovePos()).length() < this.lastFFWPTriggerDist) ) {
 			this.BuildFlowField(turn);
 		}
-		let pathVec = this.shortPaths[0];
-		
-		if (pathVec.length() > this.unit.speed * timeLeft) {
-			let moveVec = Vector2D.clone(pathVec);
-			let moveLen = this.unit.speed * timeLeft;
+	}
+
+	this.MoveUnits(turn, timePassed);
+}
+
+UnitMotionGroup.prototype.UpdateGroupPos = function()
+{
+	if (!this.shortPaths || this.shortPaths.length == 0)
+		return;
+
+	// First, calculate the average position of all units in the group.
+	const movePosAdvanceDist = 5;
+	let units = this.unit.units;
+	let avgPos = new Vector2D();
+	for (let unit of units) {
+		avgPos.add(unit.pos);
+	}
+	avgPos.x /= units.length;
+	avgPos.y /= units.length;
+
+	// Find the point on the path spline which is closest to the average position.
+	let currPos = Vector2D.clone(this.shortPathStartPoint);
+	let closestDist = -1;
+	let closestPoint = new Vector2D();
+	let closestPathVecIx = -1;
+	let closestPathVecStartPos = new Vector2D();
+	let count = 0;
+
+	for (let vec of this.shortPaths) {
+
+		let plDist = pointToLineDistance(avgPos, currPos, Vector2D.add(currPos, vec));
+		if (closestDist == -1 || closestDist > plDist.dist) {
+			closestDist = plDist.dist;
+			closestPoint = plDist.intersectionPoint;
+			closestPathVecIx = count;
+			closestPathVecStartPos = Vector2D.clone(currPos);
+		}
+		currPos.add(vec);
+		count++;
+	}
+
+	// We never move the move position back, so we can delete the vectors we
+	// have passed.
+	this.shortPaths = this.shortPaths.slice(closestPathVecIx);
+	this.shortPathStartPoint = closestPathVecStartPos;
+	this.AddShortRangeVectorOverlay(); // update visualization
+
+	this.unit.avgPos = closestPoint;
+	this.AddPositionOverlay([this.unit.avgPos, avgPos]);
+
+	// start at the current avgPos
+	let movePos = Vector2D.clone(this.unit.avgPos);
+	let currDist = 0;
+
+	// The current position is on a vector leading to the next waypoint.
+	let nextWp = Vector2D.add(closestPathVecStartPos, this.shortPaths[0]);
+	let toWp = Vector2D.sub(nextWp, movePos);
+
+	let i = 0;
+	while (currDist < movePosAdvanceDist) {
+
+		if (currDist + toWp.length() > movePosAdvanceDist) {
+			let remainingDist = movePosAdvanceDist - currDist;
+			toWp.mult(remainingDist / toWp.length());
+		}
+
+		movePos.add(toWp);
+		currDist += toWp.length();
+		let vecX = new Vector2D(1, 0);
+		this.unit.orientation = Vector2D.angle(toWp, vecX);
+
+		i++;
+		if (i >= this.shortPaths.length)
+			break;
+
+		toWp = Vector2D.clone(this.shortPaths[i]);
+	}
+	this.unit.movePos = movePos;
+}
+
+UnitMotionGroup.prototype.MoveUnits = function(turn, timePassed)
+{
+	// reset timeLeft for unit movement
+	timeLeft = timePassed / 1000;
+	let group = this.unit;
+	let spots = group.GetUnitSpots();
+
+	let moveVisualization = { points: [], vecs: [] };
+
+	for (let i = 0; i < group.units.length; ++i) {
+
+		let unitPos = Vector2D.clone(group.units[i].pos);
+		let spotPos = Vector2D.add(group.movePos, spots[i]);
+		let unitCellId = this.grid.GetCellIdP(unitPos.x, unitPos.y);
+		let currentCellNbr = this.wpD.grid[this.wpD.CellIdFromOtherGrid(unitCellId, this.grid)];
+		let unitNeighborCells = this.grid.GetNeighbors(unitCellId);
+
+		// spot vector: vector from the current position of the unit to the designated spot in the formation
+		let spV = Vector2D.sub(spotPos, unitPos);
+
+		// Directional vectors: [left, upleft, up, upright, right, downright, down, downleft]. 
+		// Their length is: wpD[CurrCell] - wpD[NextCell] if that's a positive value, otherwise
+		// the element gets removed from the set.
+		let dV = [];
+		for (let cell of unitNeighborCells) {
+
+			let vec = Vector2D.clone(cell.vec);
+			let cellNbr = this.wpD.grid[this.wpD.CellIdFromOtherGrid(cell.ix, this.grid)];
+			let wpDistChange = currentCellNbr - cellNbr;
+
+			if (wpDistChange < 0) {
+				continue;
+			}
+
+			vec.normalize();
+			vec.mult(wpDistChange);
+			dV.push(vec);
+		}
+
+		// Vectors with distance and direction towards impassable cells icV
+		// The input vectors icV are consructed this way for each cell in some range:
+		// From unit pos, ray intersect the cell box. Then reduce the length of that vector by unitObstructionSize/2.
+		let icV = [];
+		// TODO: leaving that out for now to see how well/bad it works without it.
+
+		let moveVec = this.MoveUnit(unitPos, dV, spV, icV);
+
+		if (moveVec.length() > group.units[i].speed * timeLeft) {
+			let moveLen = group.units[i].speed * timeLeft;
 			moveVec.mult(moveLen/moveVec.length());
-			this.unit.pos.add(moveVec);
-			pathVec = pathVec.mult((pathVec.length() - moveLen) / pathVec.length())
-			return;
+			moveVisualization.points.push(Vector2D.clone(group.units[i].pos));
+			moveVisualization.vecs.push(Vector2D.clone(moveVec));
+			group.units[i].pos.add(moveVec);
+			continue;
 		}
 		else {
-			this.unit.pos.add(pathVec);
-			// timeLeft in seconds, speed in meters per second
-			timeLeft -= pathVec.length() / this.unit.speed;
-			this.MovedPastWaypoint();
+			moveVisualization.points.push(Vector2D.clone(group.units[i].pos));
+			moveVisualization.vecs.push(Vector2D.clone(moveVec));
+			group.units[i].pos.add(moveVec); // TODO: we could move more...
+			continue;
 		}
 	}
+	this.AddVectorOverlay(moveVisualization.points, moveVisualization.vecs);
+}
+
+UnitMotionGroup.prototype.MoveUnit = function(unitPos, dV, spV, icV)
+{
+	let rV = new Vector2D();
+	let maxDv = new Vector2D()
+
+	for (let vec of dV) {
+		rV.add(vec);
+		if (maxDv.length() < vec.length()) { maxDv = Vector2D.clone(vec); }
+	}
+	rV.normalize();
+
+	// Sticking to the spot in the formation is less important than following the
+	// path and avoiding obstacles, so reduce the length of that vector before adding it.
+	//
+	// TODO: Yes... actually it's not always less important. It depends on the situation
+	// and we need some logic to detect different situations and act accordingly.
+	spV.normalize();
+	spV.mult(0.9);
+
+	rV.add(spV);
+	rV.normalize();
+
+	let checkV = Vector2D.clone(rV);
+	checkV.add(unitPos);
+
+	let fallback = true;
+	tst0 = this.grid.GetCellRowColP(unitPos.x, unitPos.y);
+	tst1 = this.grid.GetCellRowColP(checkV.x, checkV.y);
+	if (tst0.row - tst1.row != 0 && tst0.col - tst1.col != 0) { // diagonal movement
+	// Diagonal movement (like from A to C or from D to B) is only allowed if all adjacent cells (A, B, C and D) are passable. 
+	//    AD
+	//    BC
+		let ids = [];
+		ids[0] = this.grid.GetCellIdC(tst0.row, tst0.col);
+		ids[1] = this.grid.GetCellIdC(tst0.row, tst1.col);
+		ids[2] = this.grid.GetCellIdC(tst1.row, tst0.col);
+		ids[3] = this.grid.GetCellIdC(tst1.row, tst1.col);
+		if (this.grid.IsPassable(ids[0]) && this.grid.IsPassable(ids[1]) &&
+		    this.grid.IsPassable(ids[2]) && this.grid.IsPassable(ids[3])) {
+			fallback = false;
+		}
+	} else if (this.grid.IsPassable(this.grid.GetCellIdC(tst1.row, tst1.col))) { // just check destination
+		fallback = false;
+	}
+
+	// Fall back to just trying to get around obstacle to avoid collisions
+	if (fallback) {
+		return maxDv;
+	}
+
+	return rV;
 }
 
 UnitMotionGroup.prototype.BuildFlowField = function(turn)
 {
-	// Add direction vectors to the path spline unit maxLength is exceeded.
-	// Use that part of the path for one flowfield.
-	let maxLength = 30;
-	let corridorWidth = 10;
-	let currLength = 0;
-	let currVec = Vector2D.clone(this.unit.pos);
-	let leftX = currVec.x;
-	let rightX = currVec.x;
-	let bottomZ = currVec.y;
-	let topZ = currVec.y;
+	let group = this.unit;
 
+	// When building a new flowfield, add move vectors until the point where the vector points
+	// to is movePosExpandDist away from movePos.
+	let movePosExpandDist = 15;
+	let corridorWidth = 15;
+	let leftX = group.GetAvgPos().x;
+	let rightX = group.GetAvgPos().x;
+	let bottomZ = group.GetAvgPos().y;
+	let topZ = group.GetAvgPos().y;
+
+	// Take all units in the group and calculate a region that contains them all.
+	for (let unit of group.units) {
+		leftX = Math.min(leftX, unit.pos.x);
+		bottomZ = Math.min(bottomZ, unit.pos.y);
+		rightX = Math.max(rightX, unit.pos.x);
+		topZ = Math.max(topZ, unit.pos.y);
+	}
+
+	// The next step is to expand the region size to contain additional vectors until a certain distance from the formation move position is reached.
 	let ix = 0;
+	let movePosDist = 0;
+	let movePos = group.GetMovePos();
+	pathGoalPos = Vector2D.clone(this.shortPathStartPoint);
 	do
 	{
-		currLength += this.shortPaths[ix].length();
-		currVec.add(this.shortPaths[ix]);
-		leftX = Math.min(leftX, currVec.x);
-		rightX = Math.max(rightX, currVec.x);
-		bottomZ = Math.min(bottomZ, currVec.y);
-		topZ = Math.max(topZ, currVec.y);
+		pathGoalPos.add(this.shortPaths[ix]);
+		leftX = Math.min(leftX, pathGoalPos.x);
+		rightX = Math.max(rightX, pathGoalPos.x);
+		bottomZ = Math.min(bottomZ, pathGoalPos.y);
+		topZ = Math.max(topZ, pathGoalPos.y);
+		movePosDist = Vector2D.sub(pathGoalPos, movePos).length();
 		ix++;
-	} while (currLength < maxLength && ix < this.shortPaths.length)
+		if (ix == this.shortPaths.length)
+			this.goalIsInFF = true;
 
+	} while (movePosDist <= movePosExpandDist && ix < this.shortPaths.length)
+
+	this.lastFFWPGoal = pathGoalPos;
+
+	// There must also be enough room perpendicular to the path spline for the formation to move.
 	leftX -= corridorWidth / 2
 	rightX +=  corridorWidth / 2
 	bottomZ -=  corridorWidth / 2
@@ -114,11 +314,6 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	minCell = this.grid.GetCellRowColP(leftX, bottomZ);
 	maxCell = this.grid.GetCellRowColP(rightX, topZ);
 
-	if (this.shortPaths.length == ix)
-		this.flowfieldTriggerCount = -1; // -1 indicates the the current flowfield covers the rest of the path
-	else
-		this.flowfieldTriggerCount = ix - 1;
-
 	// goal cell calculation
 	let lastVec = this.shortPaths[ix];
 	let flowfieldCols = maxCell.col - minCell.col;
@@ -126,7 +321,7 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	let flowFieldCoordSpace = new CoordSpace(flowfieldCols, flowfieldRows, minCell.col, minCell.row);
 	let ffGrid = new Grid(flowFieldCoordSpace);
 
-	let wp = ffGrid.CellIdFromOtherGrid(this.grid.GetCellIdP(currVec.x, currVec.y), this.grid);
+	let wp = ffGrid.CellIdFromOtherGrid(this.grid.GetCellIdP(pathGoalPos.x, pathGoalPos.y), this.grid);
 
 	this.wpD = new Grid(flowFieldCoordSpace, "Float32"); // waypoint distance
 	this.wpD.grid[wp] = 0;
@@ -148,9 +343,6 @@ UnitMotionGroup.prototype.BuildFlowField = function(turn)
 	overlayObj["nodeTypeNames"] = [ "Flowfield boundary", "Impassable"];
 	overlayObj["nodes"] = new Map();
 	overlayObj["nodeTexts"] = new Map();
-
-	// also visualize the remaining short range paths
-	this.AddShortRangeVectorOverlay();
 
 	for (let i = minCell.row; i < maxCell.row; ++i) {
 		for (let j = minCell.col; j < maxCell.col; ++j) {
@@ -200,19 +392,12 @@ UnitMotionGroup.prototype.WpDistFlowField = function(grid, start, wpD)
 	}
 }
 
-UnitMotionGroup.prototype.MovedPastWaypoint = function()
-{
-	this.flowfieldTriggerCount--;
-	this.shortPaths.shift();
-	this.AddShortRangeVectorOverlay();
-}
-
 UnitMotionGroup.prototype.AddShortRangeVectorOverlay = function()
 {
 		// a copy of the vectors is needed.
 		// they are going to be modified later and the visualization data should remain unchanged
 		let summaryData = { vectors: [] };
-		summaryData["startPoint"] = new Vector2D(this.unit.pos.x, this.unit.pos.y);
+		summaryData["startPoint"] = new Vector2D(this.shortPathStartPoint.x, this.shortPathStartPoint.y);
 		for (let vec of this.shortPaths) {
 			summaryData.vectors.push(new Vector2D(vec.x, vec.y));
 		}
@@ -257,6 +442,7 @@ UnitMotionGroup.prototype.GetShortPaths = function()
 		if (prevNavCell == -1) {
 			prevNavCell = currNavCell;
 			sectionStartNavCell = currNavCell;
+			this.shortPathStartPoint = this.grid.GetPositionC(currNavCell);
 			continue;
 		}
 

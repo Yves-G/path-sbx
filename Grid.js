@@ -148,42 +148,42 @@ Grid.prototype.GetNeighbors = function(current)
 	let neighborIx = neighborDown - 1;
 	if (neighborIx >= 0 && current % cols != 0)
 		if (this.IsPassable(neighborIx) && this.IsPassable(neighborDown) && this.IsPassable(neighborLeft))
-			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2), "vec": new Vector2D(-1, -1) });
 	// down
 	neighborIx = neighborDown;
 	if (neighborIx >= 0)
 		if (this.IsPassable(neighborIx))
-			neighbors.add({ "ix": neighborIx, "dist": 1 });
+			neighbors.add({ "ix": neighborIx, "dist": 1, "vec": new Vector2D(0, -1) });
 	// down right
 	neighborIx = neighborDown + 1;
 	if (neighborIx >= 0 && current % cols != cols - 1)
 		if (this.IsPassable(neighborIx) && this.IsPassable(neighborDown) && this.IsPassable(neighborRight))
-			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2), "vec": new Vector2D(1, -1) });
 	// left
 	neighborIx = neighborLeft;
 	if (current % cols != 0)
 		if (this.IsPassable(neighborIx))
-			neighbors.add({ "ix": neighborIx, "dist": 1 });
+			neighbors.add({ "ix": neighborIx, "dist": 1, "vec": new Vector2D(-1, 0) });
 	// right
 	neighborIx = current + 1;
 	if (current % cols != cols - 1)
 		if (this.IsPassable(neighborIx))
-			neighbors.add({ "ix": neighborIx, "dist": 1 });
+			neighbors.add({ "ix": neighborIx, "dist": 1, "vec": new Vector2D(1, 0) });
 	// up left
 	neighborIx = neighborUp - 1;
 	if (neighborIx < cols * rows && current % cols != 0)
 		if (this.IsPassable(neighborIx) && this.IsPassable(neighborUp) && this.IsPassable(neighborLeft))
-			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2), "vec": new Vector2D(-1, 1) });
 	// up
 	neighborIx = neighborUp;
 	if (neighborIx < cols * rows)
 		if (this.IsPassable(neighborIx))
-			neighbors.add({ "ix": neighborIx, "dist": 1 });
+			neighbors.add({ "ix": neighborIx, "dist": 1, "vec": new Vector2D(0, 1) });
 	// up right
 	neighborIx = neighborUp + 1;
 	if (neighborIx < cols * rows && current % cols != cols - 1)
 		if (this.IsPassable(neighborIx) && this.IsPassable(neighborUp) && this.IsPassable(neighborRight))
-			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
+			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2), "vec": new Vector2D(1, 1) });
 
 	return neighbors;
 }
