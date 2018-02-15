@@ -140,7 +140,7 @@ Grid.prototype.GetNeighbors = function(current)
 			neighbors.add({ "ix": neighborIx, "dist": Math.sqrt(2) });
 	// down
 	neighborIx = current - cols;
-	if (neighborIx >= 0 && current % cols != cols - 1)
+	if (neighborIx >= 0)
 		if (this.IsPassable(neighborIx))
 			neighbors.add({ "ix": neighborIx, "dist": 1 });
 	// down right
